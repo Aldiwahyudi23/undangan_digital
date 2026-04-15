@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('image_placements', function (Blueprint $table) {
             $table->id();
             $table->foreignId('image_id')->constrained()->cascadeOnDelete();
-            $table->enum('placement', ['cover', 'hero_slide', 'gallery', 'story_page', 'couple_photo']);
+            $table->enum('placement', ['cover', 'hero_slide', 'gallery', 'story_page', 'couple_photo', 'video_story','video_cinematic','status']);
             $table->json('metadata')->nullable();
             $table->timestamps();
         });

@@ -21,6 +21,7 @@ return new class extends Migration
             $table->string('token')->nullable();
 
             $table->string('name');
+            $table->string('share_whatsapp');
             $table->text('note')->nullable();
 
             $table->string('group_name')->nullable();

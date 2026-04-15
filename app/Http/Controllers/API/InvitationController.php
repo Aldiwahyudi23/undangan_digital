@@ -56,6 +56,7 @@ class InvitationController extends Controller
                 'cover' => $this->getCoverImages($invitation),
                 'slides' => $this->getSlideImages($invitation),
                 'gallery' => $this->getGalleryImages($invitation),
+                'cinematic' => $this->getVideoCinematic($invitation),
                 'couples' => $this->getCouples($invitation),
                 'stories' => $this->getStories($invitation),
                 'events' => $this->getEvents($invitation),
@@ -90,6 +91,7 @@ class InvitationController extends Controller
                 'cover' => $this->getCoverImages($invitation),
                 'slides' => $this->getSlideImages($invitation),
                 'gallery' => $this->getGalleryImages($invitation),
+                'cinematic' => $this->getVideoCinematic($invitation),
                 'couples' => $this->getCouples($invitation),
                 'stories' => $this->getStories($invitation),
                 'events' => $this->getEvents($invitation),
@@ -195,6 +197,27 @@ class InvitationController extends Controller
             })
             ->values();
     }
+    /**
+     * Get gallery images (placement = 'gallery')
+     */
+    private function getVideoCinematic($invitation)
+    {
+        return $invitation->images
+            ->filter(function ($image) {
+                return $image->placements->contains('placement', 'video_cinematic');
+            })
+            ->sortBy('order')
+            ->map(function ($image) {
+                return [
+                    'id' => $image->id,
+                    'title' => $image->title,
+                    'path' => asset('storage/' . $image->path),
+                    'note' => $image->note,
+                    'order' => $image->order,
+                ];
+            })
+            ->values();
+    }
     
     /**
      * Get couples data (pengantin)
@@ -244,7 +267,14 @@ class InvitationController extends Controller
                     'description' => $story->description,
                     'date_event' => $story->date_event,
                     'is_featured' => $story->is_featured,
-                    'image' => $story->image ? asset('storage/' . $story->image->path) : null,
+                    'path' => $story->image ? asset('storage/' . $story->image->path) : null,
+                    'media_type' => $story->image && $story->image->placements
+                        ->pluck('placement')
+                        ->intersect(['video_story', 'video_cinematic'])
+                        ->isNotEmpty()
+                            ? 'video'
+                            : 'image',
+
                 ];
             })
             ->values();

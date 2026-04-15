@@ -44,7 +44,7 @@ class StoriesRelationManager extends RelationManager
 
                         return Image::where('invitation_id', $this->getOwnerRecord()->id)
                             ->whereHas('placements', function (Builder $query) {
-                                $query->where('placement', 'story_page');
+                                $query->whereIn('placement', ['story_page','video_story']);
                             })
                             ->whereNotIn('id', $usedImageIds)
                             ->pluck('title', 'id')

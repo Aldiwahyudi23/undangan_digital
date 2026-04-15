@@ -10,6 +10,7 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use App\Models\Image;
 use Filament\Tables\Actions\Action;
+use Illuminate\Support\Facades\Storage;
 
 class ImagesRelationManager extends RelationManager
 {
@@ -21,28 +22,6 @@ class ImagesRelationManager extends RelationManager
     {
         return $form
             ->schema([
-                Forms\Components\FileUpload::make('path')
-                    ->label('File Gambar')
-                    ->image()
-                    ->disk('public')
-                    ->visibility('public')
-                    ->directory('images')
-                    ->required()
-                    ->columnSpanFull(),
-                
-                Forms\Components\TextInput::make('title')
-                    ->label('Judul')
-                    ->maxLength(255)
-                    ->required(),
-                
-                Forms\Components\TextInput::make('theme')
-                    ->label('Tema')
-                    ->maxLength(255),
-                
-                Forms\Components\Textarea::make('note')
-                    ->label('Deskripsi')
-                    ->rows(3),
-                
                 Forms\Components\Select::make('placements')
                     ->label('Penempatan')
                     ->multiple()
@@ -54,6 +33,10 @@ class ImagesRelationManager extends RelationManager
                             ->count();
 
                         $coupleCount = \App\Models\ImagePlacement::where('placement', 'couple_photo')
+                            ->whereHas('image', fn ($q) => $q->where('invitation_id', $invitationId))
+                            ->count();
+
+                        $videoCinematicCount = \App\Models\ImagePlacement::where('placement', 'video_cinematic')
                             ->whereHas('image', fn ($q) => $q->where('invitation_id', $invitationId))
                             ->count();
 
@@ -79,6 +62,10 @@ class ImagesRelationManager extends RelationManager
                             unset($options['couple_photo']);
                         }
 
+                        if ($videoCinematicCount >= 1 && !in_array('video_cinematic', $currentPlacements)) {
+                            unset($options['video_cinematic']);
+                        }
+
                         return $options;
                     })
                     // Perbaikan: handle untuk create dan edit
@@ -101,7 +88,69 @@ class ImagesRelationManager extends RelationManager
                                 }
                             }
                         }
-                    }),
+                    })
+                    ->reactive(),
+
+                    Forms\Components\FileUpload::make('path')
+                        ->label('Upload Video')
+                        ->disk('public')
+                        ->directory('videos')
+                        ->acceptedFileTypes(['video/mp4', 'video/webm', 'video/ogg'])
+                        ->maxSize(102400)
+                        ->visible(fn ($get) => collect($get('placements'))
+                            ->intersect(['video_story', 'video_cinematic'])
+                            ->isNotEmpty())
+                        ->required(fn ($get) => collect($get('placements'))
+                            ->intersect(['video_story', 'video_cinematic'])
+                            ->isNotEmpty())
+                        ->columnSpanFull(),
+
+                    Forms\Components\FileUpload::make('path')
+                        ->label('File Gambar')
+                        ->image()
+                        ->disk('public')
+                        ->directory('images')
+                        ->saveUploadedFileUsing(function ($file, $set) {
+
+                            $manager = new \Intervention\Image\ImageManager(
+                                new \Intervention\Image\Drivers\Gd\Driver()
+                            );
+
+                            $filename = uniqid() . '.jpg';
+                            $path = 'images/' . $filename;
+
+                            $image = $manager->read($file);
+
+                            // resize + compress
+                            $image->scale(width: 1280);
+
+                            // simpan
+                            $image->toJpeg(70)->save(storage_path('app/public/' . $path));
+
+                            return $path;
+                        })
+                        ->visible(fn ($get) => !collect($get('placements'))
+                            ->intersect(['video_story', 'video_cinematic'])
+                            ->isNotEmpty())
+                        ->required(fn ($get) => !collect($get('placements'))
+                            ->intersect(['video_story', 'video_cinematic'])
+                            ->isNotEmpty())
+                        ->columnSpanFull(),
+
+                Forms\Components\TextInput::make('title')
+                    ->label('Judul')
+                    ->maxLength(255)
+                    ->required(),
+                
+                Forms\Components\TextInput::make('theme')
+                    ->label('Tema')
+                    ->maxLength(255),
+                
+                Forms\Components\Textarea::make('note')
+                    ->label('Deskripsi')
+                    ->rows(3),
+                
+
                 
                 Forms\Components\TextInput::make('order')
                     ->label('Urutan')
@@ -137,10 +186,16 @@ class ImagesRelationManager extends RelationManager
                             ->modalSubmitAction(false) // hilangkan tombol submit
                             ->modalCancelActionLabel('Tutup')
                             ->modalWidth('lg')
-                            ->modalContent(fn ($record) => view('filament.preview-image', [
-                                'image' => asset('storage/' . $record->path),
-                            ]))
+->modalContent(fn ($record) => view('filament.preview-media', [
+    'file' => asset('storage/' . $record->path),
+    'placements' => $record->placements->pluck('placement')->toArray()
+]))
                     ),
+
+                Tables\Columns\ViewColumn::make('path')
+                    ->label('Preview')
+                    ->view('filament.columns.media-preview'),
+                    
                 Tables\Columns\TextColumn::make('title')
                     ->label('Judul')
                     ->searchable(),

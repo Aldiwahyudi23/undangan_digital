@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\InvitationResource\RelationManagers;
 
+use App\Models\Couple;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\RelationManagers\RelationManager;
@@ -21,6 +22,10 @@ class GuestsRelationManager extends RelationManager
                 Forms\Components\TextInput::make('name')
                     ->required()
                     ->label('Nama Tamu'),
+
+                Forms\Components\TextInput::make('share_whatsapp')
+                    ->required()
+                    ->label('No Whatsapp'),
 
                 Forms\Components\Textarea::make('note')
                     ->label('Catatan'),
@@ -45,6 +50,10 @@ class GuestsRelationManager extends RelationManager
             ->columns([
                 Tables\Columns\TextColumn::make('name')
                     ->searchable(),
+
+                Tables\Columns\TextColumn::make('share_whatsapp')
+                    ->label('Share WhatsApp')
+                    ->formatStateUsing(fn ($state) => $state ? 'Ya' : 'Tidak'),
 
                 Tables\Columns\TextColumn::make('group_name'),
 
@@ -79,7 +88,7 @@ class GuestsRelationManager extends RelationManager
                     ->icon('heroicon-o-link')
                     ->action(function ($record) {
 
-                        $link = url('http://localhost:5173/invitation/' . $record->uuid . '?token=' . $record->token);
+                        $link = url('https://undangan-api.keluargamahaya.com/invitation/' . $record->uuid . '?token=' . $record->token);
 
                         \Filament\Notifications\Notification::make()
                             ->title('Link Undangan')
@@ -87,6 +96,60 @@ class GuestsRelationManager extends RelationManager
                             ->success()
                             ->send();
                     }),
+Tables\Actions\Action::make('share_whatsapp')
+    ->label('Share WA')
+    ->icon('heroicon-o-paper-airplane')
+    ->color('success')
+    ->url(function ($record) {
+
+        // 🔥 Format nomor (hapus 0 depan → jadi 62)
+        $phone = $record->share_whatsapp;
+
+        // bersihin karakter aneh (spasi, -, dll)
+        $phone = preg_replace('/[^0-9]/', '', $phone);
+
+        if (substr($phone, 0, 1) === '0') {
+            $phone = '62' . substr($phone, 1);
+        }
+
+        $male = Couple::firstWhere('gender', 'male');
+        $female = Couple::firstWhere('gender', 'female');
+
+        // 🔗 Link undangan
+        $link = 'https://wedding-mira-aldi.keluargamahaya.com/invitation/' 
+            . $record->uuid 
+            . '?token=' . $record->token;
+
+        // 💌 Pesan FULL (lebih niat 😎)
+        $message =
+        "*Assalamualaikum Wr. Wb.* 🙏\n\n" .
+
+        "Tanpa mengurangi rasa hormat, kami mengundang Bapak/Ibu/Saudara/i:\n\n" .
+
+        "*{$record->name}*\n\n" .
+
+        "Untuk menghadiri acara pernikahan kami:\n\n" .
+
+        "💍 *{$male->nickname} & {$female->nickname}*\n\n" .
+
+        "Yang InsyaAllah akan dilaksanakan pada:\n\n" .
+
+        "📅 *13 september 2026*\n" .
+        "⏰ *09:00 WIB*\n" .
+        "📍 *Cigawir*\n\n" .
+
+        "Berikut link undangan digital kami:\n" .
+        "$link\n\n" .
+
+        "Merupakan suatu kehormatan dan kebahagiaan bagi kami apabila Bapak/Ibu/Saudara/i berkenan hadir dan memberikan doa restu.\n\n" .
+
+        "Atas kehadiran dan doa restunya kami ucapkan terima kasih 🙏\n\n" .
+
+        "*Wassalamualaikum Wr. Wb.*";
+
+        return 'https://wa.me/' . $phone . '?text=' . rawurlencode($message);
+    })
+    ->openUrlInNewTab()
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([

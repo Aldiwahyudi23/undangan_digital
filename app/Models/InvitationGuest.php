@@ -19,6 +19,7 @@ class InvitationGuest extends Authenticatable
         'uuid',
         'token',
         'name',
+        'share_whatsapp',
         'note',
         'group_name',
         'location_tag',

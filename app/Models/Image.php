@@ -70,4 +70,11 @@ class Image extends Model implements Sortable
             get: fn () => $this->path ? asset('storage/' . $this->path) : null,
         );
     }
+
+    public function isVideo()
+    {
+        return $this->placements()
+            ->whereIn('placement', ['video_story', 'video_cinematic'])
+            ->exists();
+    }
 }
