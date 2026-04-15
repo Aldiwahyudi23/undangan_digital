@@ -60,6 +60,7 @@ class InvitationController extends Controller
                 'couples' => $this->getCouples($invitation),
                 'stories' => $this->getStories($invitation),
                 'events' => $this->getEvents($invitation),
+                'family' => $this->getFamilyMembers($invitation),
             ]
         ]);
     }
@@ -95,6 +96,7 @@ class InvitationController extends Controller
                 'couples' => $this->getCouples($invitation),
                 'stories' => $this->getStories($invitation),
                 'events' => $this->getEvents($invitation),
+                'family' => $this->getFamilyMembers($invitation),
             ]
         ]);
     }
@@ -311,4 +313,68 @@ class InvitationController extends Controller
             ->values();
     }
 
+    private function getFamilyMembers($invitation)
+    {
+        $families = $invitation->familyMembers()
+            ->orderBy('order')
+            ->get()
+            ->groupBy('group');
+
+        $result = [];
+
+        // 👰 Keluarga Wanita
+        if ($families->has('bride_family')) {
+            $result['bride_family'] = [
+                'label' => 'Keluarga Mempelai Wanita',
+                'items' => $families['bride_family']->map(function ($item) {
+                    return $this->formatFamilyItem($item);
+                })->values(),
+            ];
+        }
+
+        // 🤵 Keluarga Pria
+        if ($families->has('groom_family')) {
+            $result['groom_family'] = [
+                'label' => 'Keluarga Mempelai Pria',
+                'items' => $families['groom_family']->map(function ($item) {
+                    return $this->formatFamilyItem($item);
+                })->values(),
+            ];
+        }
+
+        // 📩 Turut Wanita (optional)
+        if ($families->has('bride_invite')) {
+            $result['bride_invite'] = [
+                'label' => 'Turut Mengundang',
+                'side' => 'Wanita',
+                'items' => $families['bride_invite']->map(function ($item) {
+                    return $this->formatFamilyItem($item);
+                })->values(),
+            ];
+        }
+
+        // 📩 Turut Pria (optional)
+        if ($families->has('groom_invite')) {
+            $result['groom_invite'] = [
+                'label' => 'Turut Mengundang',
+                'side' => 'Pria',
+                'items' => $families['groom_invite']->map(function ($item) {
+                    return $this->formatFamilyItem($item);
+                })->values(),
+            ];
+        }
+
+        return $result;
+    }
+    private function formatFamilyItem($item)
+    {
+        return [
+            'id' => $item->id,
+            'name' => $item->name,
+            'role' => $item->role,
+            'is_core' => $item->is_core,
+            'relation_label' => $item->relation_label,
+            'order' => $item->order,
+        ];
+    }
 }

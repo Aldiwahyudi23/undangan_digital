@@ -7,6 +7,7 @@ use App\Filament\Resources\InvitationResource\RelationManagers;
 use App\Models\Invitation;
 use Filament\Forms;
 use Filament\Forms\Form;
+use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -96,6 +97,7 @@ class InvitationResource extends Resource
             RelationManagers\StoriesRelationManager::class,
             // RelationManagers\AttendancesRelationManager::class,
             RelationManagers\GiftAccountRelationManager::class,
+            RelationManagers\FamilyRelationManager::class,
         ];
     }
 

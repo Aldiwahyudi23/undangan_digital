@@ -58,4 +58,9 @@ class Invitation extends Model
     {
         return $this->hasMany(GiftAccount::class);
     }
+
+    public function familyMembers()
+    {
+        return $this->hasMany(FamilyMember::class)->orderBy('order');
+    }
 }

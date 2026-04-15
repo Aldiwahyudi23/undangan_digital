@@ -52,20 +52,11 @@ class GuestsRelationManager extends RelationManager
                     ->searchable(),
 
                 Tables\Columns\TextColumn::make('share_whatsapp')
-                    ->label('Share WhatsApp')
-                    ->formatStateUsing(fn ($state) => $state ? 'Ya' : 'Tidak'),
+                    ->label('Share WhatsApp'),
 
                 Tables\Columns\TextColumn::make('group_name'),
 
                 Tables\Columns\TextColumn::make('location_tag'),
-
-                Tables\Columns\TextColumn::make('uuid')
-                    ->copyable()
-                    ->label('UUID'),
-
-                Tables\Columns\TextColumn::make('token')
-                    ->copyable()
-                    ->limit(10),
 
                 Tables\Columns\TextColumn::make('last_ip')
                     ->label('IP'),
