@@ -17,7 +17,7 @@
         "laravel/tinker": "^2.10.1",
         "laravel/ui": "^4.6",
         "spatie/eloquent-sortable": "^5.0",
-        "spatie/laravel-medialibrary": "^11.17",
+        "spatie/laravel-medialibrary": "^11.21",
         "spatie/laravel-permission": "^6.24"
     },
     "require-dev": {

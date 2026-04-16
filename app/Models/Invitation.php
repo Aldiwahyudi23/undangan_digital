@@ -63,4 +63,9 @@ class Invitation extends Model
     {
         return $this->hasMany(FamilyMember::class)->orderBy('order');
     }
+
+    public function posts()
+    {
+        return $this->hasMany(Post::class);
+    }
 }

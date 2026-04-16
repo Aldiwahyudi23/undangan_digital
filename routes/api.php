@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\AttendanceController;
 use App\Http\Controllers\Api\InvitationController;
+use App\Http\Controllers\Api\PostController;
 use App\Http\Controllers\API\VehicleController;
 use App\Http\Controllers\InvitationAccessController;
 use Illuminate\Support\Facades\Route;
@@ -16,6 +17,23 @@ Route::prefix('guest')->group(function () {
 
     // Refresh token
     Route::post('/refresh', [InvitationAccessController::class, 'refreshToken']);
+
+    // Posts (Moment & Status)
+    Route::prefix('posts')->group(function () {
+        // Create
+        Route::post('/moment', [PostController::class, 'createMoment']);
+        Route::post('/status', [PostController::class, 'createStatus']);
+        
+        // Read (Get All with pagination)
+        Route::get('/moments', [PostController::class, 'getMoments']);
+        Route::get('/statuses', [PostController::class, 'getStatuses']);
+        
+        // Read (Single post)
+        Route::get('/{id}', [PostController::class, 'show']);
+        
+        // Like/Unlike
+        Route::post('/{id}/like', [PostController::class, 'toggleLike']);
+    });
 });
 
 // Protected routes (pake auth:sanctum)

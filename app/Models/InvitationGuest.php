@@ -116,4 +116,14 @@ class InvitationGuest extends Authenticatable
         $this->save();
     }
 
+    public function posts()
+    {
+        return $this->hasMany(Post::class);
+    }
+
+    public function postLikes()
+    {
+        return $this->hasMany(PostLike::class);
+    }
+
 }
