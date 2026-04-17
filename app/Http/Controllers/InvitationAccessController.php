@@ -90,6 +90,27 @@ class InvitationAccessController extends Controller
                     'message' => 'Link undangan tidak valid'
                 ], 404);
             }
+
+             //mengambil nama pengantin
+             $invitation = $guest->invitation;  //mengambil data invitation dari guest
+             $couples = $invitation->couples;   //mengambil data couple dari invitation
+
+            $lastEvent = Event::where('invitation_id', $invitation->id)
+                ->orderBy('date', 'desc')
+                ->first();
+
+            if ($lastEvent) {
+                $loginLimit = \Carbon\Carbon::parse($lastEvent->date)
+                    ->endOfDay()
+                    ->addDays(3);
+
+                if (now()->greaterThan($loginLimit)) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Masa akses undangan sudah berakhir'
+                    ], 403);
+                }
+            }
             
             // Dapatkan device fingerprint dari header
             $deviceFingerprint = $this->getDeviceFingerprint($request);
@@ -110,10 +131,6 @@ class InvitationAccessController extends Controller
             $tokenModel = $guest->tokens()->latest()->first();
             $tokenModel->device_fingerprint = $deviceFingerprint;
             $tokenModel->save();
-
-            //mengambil nama pengantin
-             $invitation = $guest->invitation;  //mengambil data invitation dari guest
-             $couples = $invitation->couples;   //mengambil data couple dari invitation
         
             $male = $couples->firstWhere('gender', 'male'); //mengambil data couple yang berjenis kelamin laki-laki
             $female = $couples->firstWhere('gender', 'female');  //mengambil data couple yang berjenis kelamin perempuan

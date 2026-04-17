@@ -17,23 +17,6 @@ Route::prefix('guest')->group(function () {
 
     // Refresh token
     Route::post('/refresh', [InvitationAccessController::class, 'refreshToken']);
-
-    // Posts (Moment & Status)
-    Route::prefix('posts')->group(function () {
-        // Create
-        Route::post('/moment', [PostController::class, 'createMoment']);
-        Route::post('/status', [PostController::class, 'createStatus']);
-        
-        // Read (Get All with pagination)
-        Route::get('/moments', [PostController::class, 'getMoments']);
-        Route::get('/statuses', [PostController::class, 'getStatuses']);
-        
-        // Read (Single post)
-        Route::get('/{id}', [PostController::class, 'show']);
-        
-        // Like/Unlike
-        Route::post('/{id}/like', [PostController::class, 'toggleLike']);
-    });
 });
 
 // Protected routes (pake auth:sanctum)
@@ -53,6 +36,23 @@ Route::prefix('guest')->middleware(['auth:sanctum'])->group(function () {
     Route::get('/attendances', [AttendanceController::class, 'index']);
     Route::post('/attendances', [AttendanceController::class, 'store']);
     Route::get('/gift-accounts', [AttendanceController::class, 'getGiftAccounts']);
+
+        // Posts (Moment & Status)
+    Route::prefix('posts')->group(function () {
+        // Create
+        Route::post('/moment', [PostController::class, 'createMoment']);
+        Route::post('/status', [PostController::class, 'createStatus']);
+        
+        // Read (Get All with pagination)
+        Route::get('/moments', [PostController::class, 'getMoments']);
+        Route::get('/statuses', [PostController::class, 'getStatuses']);
+        
+        // Read (Single post)
+        Route::get('/{id}', [PostController::class, 'show']);
+        
+        // Like/Unlike
+        Route::post('/{id}/like', [PostController::class, 'toggleLike']);
+    });
 });
 
 

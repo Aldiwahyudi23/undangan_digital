@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Attendance;
+use App\Models\Event;
 use App\Models\Invitation;
 use App\Models\InvitationGuest;
 use Illuminate\Http\Request;
@@ -47,6 +48,23 @@ class InvitationController extends Controller
                 'message' => 'Invitation not active'
             ], 403);
         }
+
+            $lastEvent = Event::where('invitation_id', $invitation->id)
+                ->orderBy('date', 'desc')
+                ->first();
+
+            if ($lastEvent) {
+                $loginLimit = \Carbon\Carbon::parse($lastEvent->date)
+                    ->endOfDay()
+                    ->addDays(3);
+
+                if (now()->greaterThan($loginLimit)) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Masa akses undangan sudah berakhir'
+                    ], 403);
+                }
+            }
 
                     // =========================
             // 1. CEK STATUS KEHADIRAN
