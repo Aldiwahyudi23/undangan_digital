@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Attendance;
+use App\Models\Event;
 use App\Models\InvitationGuest;
 use Illuminate\Http\Request;
 use Laravel\Sanctum\PersonalAccessToken;
@@ -115,7 +117,16 @@ class InvitationAccessController extends Controller
         
             $male = $couples->firstWhere('gender', 'male'); //mengambil data couple yang berjenis kelamin laki-laki
             $female = $couples->firstWhere('gender', 'female');  //mengambil data couple yang berjenis kelamin perempuan
-            
+
+            // =========================
+            // 2. AMBIL EVENT PALING AWAL
+            // =========================
+            $firstEvent = Event::where('invitation_id', $invitation->id)
+                ->orderBy('date', 'asc')
+                ->first();
+
+            $eventDate = $firstEvent ? $firstEvent->date : null;
+
             //mengambil data slide (gambar dengan placement hero_slide)
             $slide = $invitation->images
                         ->filter(function ($image) {
@@ -158,6 +169,8 @@ class InvitationAccessController extends Controller
                         ], 
                         
                     'slide' => $slide,  //Foto Slide untuk cover dan hero slide
+        
+                    'event_date' => $eventDate ,     // tanggal paling awal
 
                     'token' => $apiToken,
                     'token_type' => 'Bearer',

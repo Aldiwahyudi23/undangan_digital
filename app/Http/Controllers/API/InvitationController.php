@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Attendance;
 use App\Models\Invitation;
 use App\Models\InvitationGuest;
 use Illuminate\Http\Request;
@@ -46,6 +47,16 @@ class InvitationController extends Controller
                 'message' => 'Invitation not active'
             ], 403);
         }
+
+                    // =========================
+            // 1. CEK STATUS KEHADIRAN
+            // =========================
+            $attendance = Attendance::where('invitation_guest_id', $guest->id)
+                ->where('invitation_id', $invitation->id)
+                ->first();
+
+            $isAttending = $attendance && $attendance->status === 'attending';
+
         
         // Kirim data lengkap
         return response()->json([
@@ -61,6 +72,7 @@ class InvitationController extends Controller
                 'stories' => $this->getStories($invitation),
                 'events' => $this->getEvents($invitation),
                 'family' => $this->getFamilyMembers($invitation),
+                'is_attending' => $isAttending, // true / false
             ]
         ]);
     }
@@ -84,6 +96,16 @@ class InvitationController extends Controller
                 'message' => 'Invitation not found'
             ], 404);
         }
+
+            // =========================
+            // 1. CEK STATUS KEHADIRAN
+            // =========================
+            $attendance = Attendance::where('invitation_id', $invitation->id)
+                ->first();
+
+            $isAttending = $attendance && $attendance->status === 'attending';
+
+        
         
         return response()->json([
             'success' => true,
@@ -97,6 +119,7 @@ class InvitationController extends Controller
                 'stories' => $this->getStories($invitation),
                 'events' => $this->getEvents($invitation),
                 'family' => $this->getFamilyMembers($invitation),
+                'is_attending' => $isAttending, // true / false
             ]
         ]);
     }
