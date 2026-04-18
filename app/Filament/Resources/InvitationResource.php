@@ -95,9 +95,10 @@ class InvitationResource extends Resource
             RelationManagers\EventsRelationManager::class,
             RelationManagers\MapsRelationManager::class,
             RelationManagers\StoriesRelationManager::class,
-            // RelationManagers\AttendancesRelationManager::class,
             RelationManagers\GiftAccountRelationManager::class,
             RelationManagers\FamilyRelationManager::class,
+            RelationManagers\AttendanceRelationManager::class,
+            RelationManagers\PostRelationManager::class,
         ];
     }
 
