@@ -340,6 +340,7 @@ class InvitationController extends Controller
                     'end_time' => $event->end_time,
                     'notes' => $event->notes,
                     'metadata' => $event->metadata,
+                    'image' => $event->image ? asset('storage/' . $event->image->path) : null,
                     'location' => $event->map ? [
                         'maps_id' => $event->map->id,
                         'name' => $event->map->name,

@@ -12,6 +12,7 @@ class Event extends Model
         'date',
         'start_time',
         'end_time',
+        'image_id',
         'map_id',
         'notes',
         'metadata'
@@ -33,5 +34,10 @@ class Event extends Model
     public function map()
     {
         return $this->belongsTo(Map::class);
+    }
+
+    public function image()
+    {
+        return $this->belongsTo(Image::class);
     }
 }

@@ -18,6 +18,7 @@ return new class extends Migration
             $table->date('date');
             $table->time('start_time');
             $table->time('end_time')->nullable();
+            $table->foreignId('image_id')->nullable()->constrained('images')->nullOnDelete();
             $table->foreignId('map_id')->nullable()->constrained()->nullOnDelete();
             $table->text('notes')->nullable();
             $table->json('metadata')->nullable(); // link_streaming, dress_code, etc

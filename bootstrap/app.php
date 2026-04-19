@@ -3,6 +3,7 @@
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Support\Facades\Schedule;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -20,4 +21,10 @@ return Application::configure(basePath: dirname(__DIR__))
     
     ->withExceptions(function (Exceptions $exceptions): void {
         //
-    })->create();
+    })
+    ->withSchedule(function (Schedule $schedule) {
+        $schedule->command('guests:clean')->daily(); // jalan tiap hari
+        //    $schedule->command('guests:clean')->hourly();
+        // $schedule->command('guests:clean')->everyMinute();
+    })
+    ->create();

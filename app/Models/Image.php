@@ -77,4 +77,9 @@ class Image extends Model implements Sortable
             ->whereIn('placement', ['video_story', 'video_cinematic'])
             ->exists();
     }
+
+    public function events()
+    {
+        return $this->hasMany(Event::class);
+    }
 }

@@ -35,7 +35,7 @@ class MapsRelationManager extends RelationManager
                     ->label('URL Frame Google Maps')
                     ->url(),
                 Forms\Components\Select::make('image_id')
-                    ->label('Foto Lokasi')
+                    ->label('Foto Event')
                     ->relationship('image', 'title')
                     ->searchable()
                     ->preload(),

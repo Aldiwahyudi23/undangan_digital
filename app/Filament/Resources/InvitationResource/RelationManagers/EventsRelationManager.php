@@ -30,6 +30,11 @@ class EventsRelationManager extends RelationManager
                     ->required(),
                 Forms\Components\TimePicker::make('end_time')
                     ->label('Jam Selesai'),
+                Forms\Components\Select::make('image_id')
+                    ->label('Foto Lokasi')
+                    ->relationship('image', 'title')
+                    ->searchable()
+                    ->preload(),
                 Forms\Components\Select::make('map_id')
                     ->label('Lokasi')
                     ->relationship('map', 'name')
@@ -68,6 +73,7 @@ class EventsRelationManager extends RelationManager
                 Tables\Columns\TextColumn::make('end_time')
                     ->label('Jam Selesai')
                     ->time('H:i'),
+
                 Tables\Columns\TextColumn::make('map.name')
                     ->label('Lokasi'),
             ])
