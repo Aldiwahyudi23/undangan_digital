@@ -19,6 +19,7 @@ class InvitationGuest extends Authenticatable
         'uuid',
         'token',
         'name',
+        'role',
         'share_whatsapp',
         'note',
         'group_name',
@@ -29,7 +30,9 @@ class InvitationGuest extends Authenticatable
         'device_ids',
         'last_ip',
         'last_user_agent',
-        'is_locked'
+        'is_locked',
+        'is_streaming',
+        'permissions'
     ];
 
     protected $casts = [
@@ -37,6 +40,8 @@ class InvitationGuest extends Authenticatable
         'is_opened' => 'boolean',
         'is_locked' => 'boolean',
         'opened_at' => 'datetime',
+        'permissions' => 'array',
+
     ];
 
     // 🔗 RELATION

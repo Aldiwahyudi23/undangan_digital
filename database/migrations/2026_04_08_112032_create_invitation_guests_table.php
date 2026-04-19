@@ -23,21 +23,24 @@ return new class extends Migration
             $table->string('name');
             $table->string('share_whatsapp');
             $table->text('note')->nullable();
-
+            
             $table->string('group_name')->nullable();
             $table->string('location_tag')->nullable();
-
-                        // 📊 tracking
+            
+            // 📊 tracking
             $table->boolean('is_opened')->default(false);
             $table->timestamp('opened_at')->nullable();
             $table->integer('max_device')->default(1);
             $table->json('device_ids')->nullable();
-
+            
             // 🔐 Security tracking
             $table->string('last_ip')->nullable();
             $table->text('last_user_agent')->nullable();
-
+            
             $table->boolean('is_locked')->default(false);
+            $table->boolean('is_streaming')->default(false);
+            $table->enum('role', ['host', 'guest'])->default('guest');
+            $table->json('permissions')->nullable(); // untuk kebutuhan custom di masa depan   
             $table->timestamps();
         });
     }
