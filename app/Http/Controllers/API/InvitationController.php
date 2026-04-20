@@ -156,6 +156,7 @@ class InvitationController extends Controller
             'group_name' => $guest->group_name,
             'location_tag' => $guest->location_tag,
             'note' => $guest->note,
+            'role' => $guest->role,
         ];
     }
     

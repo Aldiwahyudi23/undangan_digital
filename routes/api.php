@@ -8,10 +8,13 @@ use App\Http\Controllers\API\VehicleController;
 use App\Http\Controllers\InvitationAccessController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/agora/token', [AgoraController::class, 'token']);
-Route::post('/agora/leave', [AgoraController::class, 'leave']);
-Route::post('/agora/kick', [AgoraController::class, 'kick']);
-Route::get('/agora/status', [AgoraController::class, 'status']);
+
+ Route::prefix('agora')->group(function () {
+        Route::get('/token', [AgoraController::class, 'token']);
+        Route::post('/leave', [AgoraController::class, 'leave']);
+        Route::post('/kick', [AgoraController::class, 'kick']);
+        Route::get('/status', [AgoraController::class, 'status']);
+    });
 // Public routes (tanpa auth)
 Route::prefix('guest')->group(function () {
     // Login via link undangan
@@ -57,6 +60,16 @@ Route::prefix('guest')->middleware(['auth:sanctum'])->group(function () {
         
         // Like/Unlike
         Route::post('/{id}/like', [PostController::class, 'toggleLike']);
+    });
+
+    Route::prefix('agora')->group(function () {
+        Route::get('/token', [AgoraController::class, 'token']);
+        Route::post('/join-slot',  [AgoraController::class, 'joinSlot']);
+        Route::post('/leave-slot', [AgoraController::class, 'leaveSlot']);
+        Route::post('/leave-by-uid', [AgoraController::class, 'leaveByUid']);
+        Route::post('/leave', [AgoraController::class, 'leave']);
+        Route::post('/kick', [AgoraController::class, 'kick']);
+        Route::get('/status', [AgoraController::class, 'status']);
     });
 });
 
