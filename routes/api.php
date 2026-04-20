@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\AgoraController;
 use App\Http\Controllers\Api\AttendanceController;
 use App\Http\Controllers\Api\InvitationController;
+use App\Http\Controllers\Api\LiveController;
 use App\Http\Controllers\Api\PostController;
 use App\Http\Controllers\API\VehicleController;
 use App\Http\Controllers\InvitationAccessController;
@@ -70,6 +71,11 @@ Route::prefix('guest')->middleware(['auth:sanctum'])->group(function () {
         Route::post('/leave', [AgoraController::class, 'leave']);
         Route::post('/kick', [AgoraController::class, 'kick']);
         Route::get('/status', [AgoraController::class, 'status']);
+        Route::prefix('viewer')->group(function () {
+           Route::post('/join', [LiveController::class, 'joinViewer']);
+            Route::post('/leave', [LiveController::class, 'leaveViewer']);
+            Route::get('/viewers/{id}', [LiveController::class, 'getViewerCount']);
+        });
     });
 });
 
