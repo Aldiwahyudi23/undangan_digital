@@ -39,6 +39,8 @@ return new class extends Migration
             
             $table->boolean('is_locked')->default(false);
             $table->boolean('is_streaming')->default(false);
+            $table->boolean('is_watching_live')->default(false);
+            $table->timestamp('last_seen_live')->nullable();
             $table->enum('role', ['host', 'guest'])->default('guest');
             $table->json('permissions')->nullable(); // untuk kebutuhan custom di masa depan   
             $table->timestamps();

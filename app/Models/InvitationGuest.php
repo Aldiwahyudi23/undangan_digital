@@ -32,6 +32,8 @@ class InvitationGuest extends Authenticatable
         'last_user_agent',
         'is_locked',
         'is_streaming',
+        'is_watching_live',
+        'last_seen_live',
         'permissions'
     ];
 
@@ -40,6 +42,7 @@ class InvitationGuest extends Authenticatable
         'is_opened' => 'boolean',
         'is_locked' => 'boolean',
         'opened_at' => 'datetime',
+        'last_seen_live' => 'datetime',
         'permissions' => 'array',
 
     ];
