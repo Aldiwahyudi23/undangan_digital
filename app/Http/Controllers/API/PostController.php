@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Attendance;
+use App\Models\InvitationGuest;
 use App\Models\Post;
 use App\Models\PostLike;
 use Illuminate\Http\Request;
@@ -35,6 +37,23 @@ class PostController extends Controller
         }
 
         $request->validate($rules);
+
+             // =========================
+            // 1. CEK STATUS KEHADIRAN
+            // =========================
+            $attendance = Attendance::where('invitation_guest_id', $request->invitation_guest_id)
+                ->where('invitation_id', $request->invitation_id)
+                ->first();
+
+            $isAttending = $attendance && $attendance->status === 'attending';
+
+        if ($isAttending === false) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Mohon Maaf, Halaman ini hanya bisa update Postingan khusus tamu yang Hadir.'
+            ], 403);
+        }
+
 
         DB::beginTransaction();
         try {
@@ -90,6 +109,22 @@ class PostController extends Controller
             'caption' => 'nullable|string',
             'file' => 'required|file|mimes:jpeg,png,jpg,gif,mp4,mov,avi|max:15360'
         ]);
+
+                     // =========================
+            // 1. CEK STATUS KEHADIRAN
+            // =========================
+            $attendance = Attendance::where('invitation_guest_id', $request->invitation_guest_id)
+                ->where('invitation_id', $request->invitation_id)
+                ->first();
+
+            $isAttending = $attendance && $attendance->status === 'attending';
+
+        if ($isAttending === false) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Mohon Maaf, Halaman ini hanya bisa update Postingan khusus tamu yang Hadir.'
+            ], 403);
+        }
 
         DB::beginTransaction();
         try {

@@ -66,7 +66,7 @@ class InvitationController extends Controller
                 }
             }
 
-                    // =========================
+             // =========================
             // 1. CEK STATUS KEHADIRAN
             // =========================
             $attendance = Attendance::where('invitation_guest_id', $guest->id)
@@ -118,10 +118,11 @@ class InvitationController extends Controller
             // =========================
             // 1. CEK STATUS KEHADIRAN
             // =========================
-            $attendance = Attendance::where('invitation_id', $invitation->id)
-                ->first();
+            // $attendance = Attendance::where('invitation_guest_id', $guest->id)
+            //     ->where('invitation_id', $invitation->id)
+            //     ->first();
 
-            $isAttending = $attendance && $attendance->status === 'attending';
+            // $isAttending = $attendance && $attendance->status === 'attending';
 
         
         
@@ -137,7 +138,7 @@ class InvitationController extends Controller
                 'stories' => $this->getStories($invitation),
                 'events' => $this->getEvents($invitation),
                 'family' => $this->getFamilyMembers($invitation),
-                'is_attending' => $isAttending, // true / false
+                // 'is_attending' => $isAttending, // true / false
             ]
         ]);
     }

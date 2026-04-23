@@ -72,9 +72,10 @@ Route::prefix('guest')->middleware(['auth:sanctum'])->group(function () {
         Route::post('/kick', [AgoraController::class, 'kick']);
         Route::get('/status', [AgoraController::class, 'status']);
         Route::get('/viewers', [AgoraController::class, 'viewers']);
+        Route::get('/heartbeat', [AgoraController::class, 'heartbeat']);
     });
 });
-        
+      Route::get('/viewers', [AgoraController::class, 'viewers']);  
 Route::get('/gift-accounts', [AttendanceController::class, 'getGiftAccounts']);
 // API Documentation route
 Route::get('/docs', function () {
