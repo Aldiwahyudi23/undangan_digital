@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\AgoraController;
 use App\Http\Controllers\Api\AttendanceController;
 use App\Http\Controllers\Api\InvitationController;
+use App\Http\Controllers\Api\LiveChatController;
 use App\Http\Controllers\Api\LiveController;
 use App\Http\Controllers\Api\PostController;
 use App\Http\Controllers\API\VehicleController;
@@ -74,8 +75,12 @@ Route::prefix('guest')->middleware(['auth:sanctum'])->group(function () {
         Route::get('/viewers', [AgoraController::class, 'viewers']);
         Route::get('/heartbeat', [AgoraController::class, 'heartbeat']);
     });
+    Route::prefix('live-chat')->group(function () {
+        Route::get('/', [LiveChatController::class, 'index']);
+        Route::post('/', [LiveChatController::class, 'store']);
+        Route::delete('/{id}', [LiveChatController::class, 'destroy']);
+    });
 });
-      Route::get('/viewers', [AgoraController::class, 'viewers']);  
 Route::get('/gift-accounts', [AttendanceController::class, 'getGiftAccounts']);
 // API Documentation route
 Route::get('/docs', function () {

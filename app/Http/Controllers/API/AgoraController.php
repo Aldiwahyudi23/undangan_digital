@@ -125,10 +125,10 @@ class AgoraController extends Controller
 
             $isAttending = $attendance && $attendance->status === 'attending';
 
-        if ($isAttending === false) {
+        if ($isAttending === true) {
             return response()->json([
                 'success' => false,
-                'message' => 'Mohon Maaf, Halaman ini hanya bisa update Postingan khusus tamu yang Hadir.'
+                'message' => 'Mohon Maaf, Halaman ini hanya bisa joint untuk tamu yang tidak bisa hadir.'
             ], 403);
         }
 

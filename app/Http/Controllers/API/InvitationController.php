@@ -343,6 +343,12 @@ class InvitationController extends Controller
                     'notes' => $event->notes,
                     'metadata' => $event->metadata,
                     'image' => $event->image ? asset('storage/' . $event->image->path) : null,
+                    'media_type' => $event->image && $event->image->placements
+                        ->pluck('placement')
+                        ->intersect(['video_story', 'video_cinematic'])
+                        ->isNotEmpty()
+                            ? 'video'
+                            : 'image',
                     'location' => $event->map ? [
                         'maps_id' => $event->map->id,
                         'name' => $event->map->name,
