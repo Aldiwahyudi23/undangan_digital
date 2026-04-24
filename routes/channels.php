@@ -1,3 +1,7 @@
-Broadcast::channel('live-chat.{invitationId}', function ($user = null, $invitationId) {
-    return true; // semua guest boleh join
+<?php
+
+use Illuminate\Support\Facades\Broadcast;
+
+Broadcast::channel('live-chat.{id}', function () {
+    return true;
 });

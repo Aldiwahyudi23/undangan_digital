@@ -81,6 +81,13 @@ Route::prefix('guest')->middleware(['auth:sanctum'])->group(function () {
         Route::delete('/{id}', [LiveChatController::class, 'destroy']);
     });
 });
+
+    Route::prefix('live-chat')->group(function () {
+        Route::get('/', [LiveChatController::class, 'index']);
+        Route::post('/', [LiveChatController::class, 'store']);
+        Route::delete('/{id}', [LiveChatController::class, 'destroy']);
+    });
+    
 Route::get('/gift-accounts', [AttendanceController::class, 'getGiftAccounts']);
 // API Documentation route
 Route::get('/docs', function () {

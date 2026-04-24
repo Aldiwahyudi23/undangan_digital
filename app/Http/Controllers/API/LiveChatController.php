@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\LiveChat;
+use App\Models\InvitationGuest;
 use App\Events\LiveChatMessageSent;
 
 class LiveChatController extends Controller
@@ -41,12 +42,23 @@ class LiveChatController extends Controller
         $request->validate([
             'invitation_id' => 'required|exists:invitations,id',
             'message' => 'required|string|max:1000',
-            'invitation_guest_id' => 'nullable|exists:invitation_guests,id'
+            'guest_uuid' => 'nullable|string' // ← terima guest_uuid dari frontend
         ]);
+
+        // 🔍 Cari InvitationGuest berdasarkan UUID
+        $invitationGuestId = null;
+        
+        if ($request->filled('guest_uuid')) {
+            $invitationGuest = InvitationGuest::where('uuid', $request->guest_uuid)->first();
+            
+            if ($invitationGuest) {
+                $invitationGuestId = $invitationGuest->id;
+            }
+        }
 
         $chat = LiveChat::create([
             'invitation_id' => $request->invitation_id,
-            'invitation_guest_id' => $request->invitation_guest_id,
+            'invitation_guest_id' => $invitationGuestId, // ← simpan ID, bukan UUID
             'message' => $request->message,
             'type' => 'text'
         ]);
