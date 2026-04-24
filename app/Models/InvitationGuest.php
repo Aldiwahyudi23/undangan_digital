@@ -134,4 +134,9 @@ class InvitationGuest extends Authenticatable
         return $this->hasMany(PostLike::class);
     }
 
+    public function liveChats()
+    {
+        return $this->hasMany(LiveChat::class);
+    }
+
 }

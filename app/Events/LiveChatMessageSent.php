@@ -4,49 +4,54 @@ namespace App\Events;
 
 use App\Models\LiveChat;
 use Illuminate\Broadcasting\Channel;
-use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
+use Illuminate\Contracts\Broadcasting\ShouldBroadcastNow;
 use Illuminate\Queue\SerializesModels;
 
-class LiveChatMessageSent implements ShouldBroadcast
+class LiveChatMessageSent implements ShouldBroadcastNow
 {
     use SerializesModels;
 
     public $chat;
 
+    /**
+     * Create a new event instance.
+     */
     public function __construct(LiveChat $chat)
     {
-        $this->chat = $chat;
+        // penting: load relasi biar tidak null di broadcast
+        $this->chat = $chat->load('guest');
     }
 
     /**
-     * 📡 Channel berdasarkan invitation (room live)
+     * 📡 Channel (public)
      */
-    public function broadcastOn()
+    public function broadcastOn(): Channel
     {
         return new Channel('live-chat.' . $this->chat->invitation_id);
     }
 
     /**
-     * 🏷 Nama event di frontend
+     * 🏷 Nama event custom
      */
-    public function broadcastAs()
+    public function broadcastAs(): string
     {
         return 'chat.sent';
     }
 
     /**
-     * 📦 Data yang dikirim ke frontend
+     * 📦 Payload ke frontend
      */
-    public function broadcastWith()
+    public function broadcastWith(): array
     {
         return [
             'id' => $this->chat->id,
             'message' => $this->chat->message,
             'type' => $this->chat->type,
-            'created_at' => $this->chat->created_at,
+            'created_at' => $this->chat->created_at->toDateTimeString(),
+
             'guest' => [
-                'id' => $this->chat->guest?->id,
-                'name' => $this->chat->guest?->name ?? 'Guest'
+                'id'   => $this->chat->guest?->id,
+                'name' => $this->chat->guest?->name ?? 'Guest',
             ]
         ];
     }
