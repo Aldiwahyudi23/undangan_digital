@@ -90,6 +90,11 @@ class InvitationResource extends Resource
     {
         return [
             RelationManagers\GuestsRelationManager::class,
+            RelationManagers\PhysicalsRelationManager::class,
+            RelationManagers\BarcodePdfBatchesRelationManager::class,
+            RelationManagers\InvitationBarcodesRelationManager::class,
+            RelationManagers\GuestCheckinsRelationManager::class,
+            RelationManagers\DoorprizeWinnersRelationManager::class,
             RelationManagers\ImagesRelationManager::class,
             RelationManagers\CouplesRelationManager::class,
             RelationManagers\EventsRelationManager::class,
@@ -99,6 +104,7 @@ class InvitationResource extends Resource
             RelationManagers\FamilyRelationManager::class,
             RelationManagers\AttendanceRelationManager::class,
             RelationManagers\PostRelationManager::class,
+            RelationManagers\UsersRelationManager::class,
         ];
     }
 

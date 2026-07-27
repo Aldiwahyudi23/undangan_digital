@@ -70,17 +70,18 @@ class InvitationAccessController extends Controller
     public function loginViaLink($uuid, Request $request)
     {
         try {
-            // $token = $request->query('token');
+            $token = $request->query('token');
             
-            // if (!$token) {
-            //     return response()->json([
-            //         'success' => false,
-            //         'message' => 'Token tidak ditemukan dalam link'
-            //     ], 400);
-            // }
+            if (!$token) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Token tidak ditemukan dalam link'
+                ], 400);
+            }
             
             // Cari guest
             $guest = InvitationGuest::where('uuid', $uuid)
+                ->where('token', $token)
                 ->first();
             
             if (!$guest) {

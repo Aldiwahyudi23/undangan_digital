@@ -6,6 +6,7 @@ use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables;
+use Illuminate\Database\Eloquent\Builder;
 use Filament\Tables\Table;
 
 class EventsRelationManager extends RelationManager
@@ -30,16 +31,43 @@ class EventsRelationManager extends RelationManager
                     ->required(),
                 Forms\Components\TimePicker::make('end_time')
                     ->label('Jam Selesai'),
+                // Forms\Components\Select::make('image_id')
+                //     ->label('Foto Lokasi')
+                //     ->relationship('image', 'title')
+                //     ->searchable()
+                //     ->preload(),
+                // Forms\Components\Select::make('map_id')
+                //     ->label('Lokasi')
+                //     ->relationship('map', 'name')
+                //     ->searchable()
+                //     ->preload(),
+                
                 Forms\Components\Select::make('image_id')
                     ->label('Foto Lokasi')
-                    ->relationship('image', 'title')
+                    ->relationship(
+                        name: 'image',
+                        titleAttribute: 'title',
+                        modifyQueryUsing: fn (Builder $query) => $query->where(
+                            'invitation_id',
+                            $this->getOwnerRecord()->id
+                        )
+                    )
                     ->searchable()
                     ->preload(),
+                    
                 Forms\Components\Select::make('map_id')
                     ->label('Lokasi')
-                    ->relationship('map', 'name')
+                    ->relationship(
+                        name: 'map',
+                        titleAttribute: 'name',
+                        modifyQueryUsing: fn (Builder $query) => $query->where(
+                            'invitation_id',
+                            $this->getOwnerRecord()->id
+                        )
+                    )
                     ->searchable()
                     ->preload(),
+    
                 Forms\Components\Textarea::make('notes')
                     ->label('Catatan')
                     ->rows(3),

@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Events\LiveChatMessageSent;
 use App\Http\Controllers\Controller;
 use App\Models\Attendance;
 use Illuminate\Http\Request;
 use App\Models\InvitationGuest;
+use App\Models\LiveChat;
 use App\Services\Agora\RtcTokenBuilder;
 use App\Services\Agora\RtmTokenBuilder;
 use Illuminate\Support\Facades\Log;
@@ -87,6 +89,12 @@ class AgoraController extends Controller
             $privilegeExpiredTs
         );
 
+        // 🔥 Kirim system message saat masuk live
+        $this->sendSystemMessage(
+            $guest,
+            "👋 {$guest->name} masuk ke live"
+        );
+
         return response()->json([
             'appId'    => env('AGORA_APP_ID'),
             'rtcToken' => $token,
@@ -151,6 +159,11 @@ class AgoraController extends Controller
 
         $guest->is_streaming = true;
         $guest->save();
+
+        $this->sendSystemMessage(
+            $guest,
+            "🎥 {$guest->name} naik ke video"
+        );
 
         $channelName        = env('AGORA_CHANNEL_PREFIX', 'invitation_') . $guest->invitation_id;
         $uid                = abs(crc32($guest->uuid));
@@ -247,6 +260,11 @@ class AgoraController extends Controller
         $guest->is_streaming = false;
         $guest->save();
 
+         $this->sendSystemMessage(
+            $guest,
+            "📴 {$guest->name} turun dari video"
+        );
+
         return response()->json(['message' => 'Keluar slot']);
     }
 
@@ -264,6 +282,11 @@ class AgoraController extends Controller
         $guest->is_streaming = false;
         $guest->is_watching_live = false;
         $guest->save();
+
+        $this->sendSystemMessage(
+            $guest,
+            "👋 {$guest->name} keluar dari live"
+        );
 
         return response()->json([
             'message' => 'Keluar dari live'
@@ -291,6 +314,11 @@ class AgoraController extends Controller
         $target->is_watching_live = false;
         $target->save();
 
+         $this->sendSystemMessage(
+            $target,
+            "🚫 {$target->name} dikeluarkan oleh host"
+        );
+
         return response()->json([
             'message' => 'User di-kick'
         ]);
@@ -312,4 +340,16 @@ class AgoraController extends Controller
             'is_live' => $active
         ]);
     }
+
+    private function sendSystemMessage($guest, $message)
+    {
+        $chat = LiveChat::create([
+            'invitation_id'        => $guest->invitation_id,
+            'invitation_guest_id' => $guest->id,
+            'message'              => $message,
+            'type'                 => 'system',
+        ]);
+
+        broadcast(new LiveChatMessageSent($chat))->toOthers();
+}
 }

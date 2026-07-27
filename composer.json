@@ -7,6 +7,7 @@
     "license": "MIT",
     "require": {
         "php": "^8.2",
+        "barryvdh/laravel-dompdf": "^3.1",
         "filament/filament": "3.3",
         "filament/forms": "3.3",
         "filament/spatie-laravel-media-library-plugin": "3.3",
@@ -18,6 +19,7 @@
         "laravel/ui": "^4.6",
         "predis/predis": "^3.4",
         "pusher/pusher-php-server": "^7.2",
+        "simplesoftwareio/simple-qrcode": "^4.2",
         "spatie/eloquent-sortable": "^5.0",
         "spatie/laravel-medialibrary": "^11.21",
         "spatie/laravel-permission": "^6.24"

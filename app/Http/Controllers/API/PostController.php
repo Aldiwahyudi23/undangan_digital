@@ -28,9 +28,9 @@ class PostController extends Controller
             $files = $request->file('files');
             if (is_array($files)) {
                 $rules['files'] = 'required|array|min:1|max:5';
-                $rules['files.*'] = 'file|mimes:jpeg,png,jpg,gif,mp4,mov,avi|max:15360';
+                $rules['files.*'] = 'file|mimes:jpeg,png,jpg,gif,mp4,mov,avi|max:30720'; // max 30MB per file
             } else {
-                $rules['files'] = 'required|file|mimes:jpeg,png,jpg,gif,mp4,mov,avi|max:15360';
+                $rules['files'] = 'required|file|mimes:jpeg,png,jpg,gif,mp4,mov,avi|max:30720'; // max 30MB per file
             }
         } else {
             $rules['files'] = 'required';
@@ -107,7 +107,7 @@ class PostController extends Controller
             'invitation_id' => 'required|exists:invitations,id',
             'invitation_guest_id' => 'required|exists:invitation_guests,id',
             'caption' => 'nullable|string',
-            'file' => 'required|file|mimes:jpeg,png,jpg,gif,mp4,mov,avi|max:15360'
+            'file' => 'required|file|mimes:jpeg,png,jpg,gif,mp4,mov,avi|max:30720'
         ]);
 
                      // =========================

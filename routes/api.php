@@ -89,30 +89,14 @@ Route::prefix('guest')->middleware(['auth:sanctum'])->group(function () {
     });
     
 Route::get('/gift-accounts', [AttendanceController::class, 'getGiftAccounts']);
-// API Documentation route
-Route::get('/docs', function () {
-    return response()->json([
-        'message' => 'Vehicle Management API v1',
-        'endpoints' => [
-            'GET /api/v1/vehicles' => 'List all vehicles with filters',
-            'GET /api/v1/vehicles/{id}' => 'Get specific vehicle details',
-            'GET /api/v1/brands' => 'List all vehicle brands',
-            'GET /api/v1/brands/{id}/models' => 'Get models by brand',
-            'GET /api/v1/vehicles/search?query=...' => 'Search vehicles',
-        ],
-        'filters' => [
-            'brand' => 'Filter by brand ID',
-            'model' => 'Filter by model ID',
-            'year_from' => 'Filter by minimum year',
-            'year_to' => 'Filter by maximum year',
-            'fuel_type' => 'Filter by fuel type',
-            'min_cc' => 'Filter by minimum engine CC',
-            'max_cc' => 'Filter by maximum engine CC',
-            'sort' => 'Sort by field (prefix with - for descending)',
-            'per_page' => 'Items per page (max 100)',
-        ]
-    ]);
-});
+
+
+use App\Http\Controllers\Api\Receptionist\AuthController;
+use App\Http\Controllers\Api\Receptionist\DashboardController;
+use App\Http\Controllers\Api\Receptionist\GuestSearchController;
+use App\Http\Controllers\Api\Receptionist\CheckinController;
+use App\Http\Controllers\Api\Receptionist\ManualCheckinController;
+use App\Http\Controllers\Api\Receptionist\DoorprizeController;
 
 Route::get('/test', function () {
     return response()->json([
@@ -120,6 +104,27 @@ Route::get('/test', function () {
         'message' => 'API jalan'
     ]);
 });
+
+// Receptionist Auth (public)
+Route::prefix('receptionist')->group(function () {
+    Route::post('/login', [AuthController::class, 'login']);
+});
+
+// Receptionist Protected
+Route::prefix('receptionist')
+    ->middleware(['auth:sanctum', 'receptionist'])
+    ->group(function () {
+        Route::post('/logout', [AuthController::class, 'logout']);
+        Route::get('/me', [AuthController::class, 'me']);
+        Route::get('/dashboard', DashboardController::class);
+        Route::get('/guests/search', [GuestSearchController::class, 'search']);
+        Route::post('/checkin', [CheckinController::class, 'checkin']);
+        Route::post('/checkout', [CheckinController::class, 'checkout']);
+        Route::post('/checkin/manual', [ManualCheckinController::class, 'store']);
+        Route::post('/checkout/manual', [ManualCheckinController::class, 'checkout']);
+        Route::post('/doorprize/spin', [DoorprizeController::class, 'spin']);
+        Route::post('/doorprize/save', [DoorprizeController::class, 'store']);
+    });
 
 // 4|X7UtX7mRImr0FDmFekFRKxjMZQvXaeihxcroOM1a20ef4c00
 

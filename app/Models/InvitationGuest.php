@@ -24,6 +24,7 @@ class InvitationGuest extends Authenticatable
         'note',
         'group_name',
         'location_tag',
+        'invitation_type',
         'is_opened',
         'opened_at',
         'max_device',
@@ -34,7 +35,7 @@ class InvitationGuest extends Authenticatable
         'is_streaming',
         'is_watching_live',
         'last_seen_live',
-        'permissions'
+        'permissions',
     ];
 
     protected $casts = [
@@ -44,7 +45,6 @@ class InvitationGuest extends Authenticatable
         'opened_at' => 'datetime',
         'last_seen_live' => 'datetime',
         'permissions' => 'array',
-
     ];
 
     // 🔗 RELATION
@@ -53,10 +53,10 @@ class InvitationGuest extends Authenticatable
         return $this->belongsTo(Invitation::class);
     }
 
-    public function attendance()
-    {
-        return $this->hasOne(Attendance::class);
-    }
+        public function attendance()
+        {
+            return $this->hasOne(Attendance::class, 'invitation_guest_id');
+        }
 
 
     // 🔥 AUTO GENERATE UUID + TOKEN
@@ -64,17 +64,38 @@ class InvitationGuest extends Authenticatable
     {
         static::creating(function ($guest) {
 
-            // UUID (unik global)
+            // UUID
             if (!$guest->uuid) {
                 $guest->uuid = (string) Str::uuid();
             }
 
-            // Token (random string)
+            // Token
             if (!$guest->token) {
                 $guest->token = Str::random(40);
             }
-        });
+
+            // Random color icon
+            if (empty($guest->permissions)) {
+                $colors = [
+                    '#FACC15', // Yellow
+                    '#0071EB', // Blue
+                    '#E50914', // Netflix Red
+                ];
+
+                $guest->permissions = [
+                    'color_icon' => $colors[array_rand($colors)],
+                ];
+            }
+
+                    // Created By
+            if (empty($permissions['created_by']) && auth()->check()) {
+                $permissions['created_by'] = auth()->user()->name;
+            }
+
+            $guest->permissions = $permissions;
+            });
     }
+
   // Generate device fingerprint
     public function getDeviceFingerprint($request)
     {
@@ -138,5 +159,21 @@ class InvitationGuest extends Authenticatable
     {
         return $this->hasMany(LiveChat::class);
     }
+
+    public function barcodes()
+    {
+        return $this->hasMany(InvitationBarcode::class, 'invitation_guest_id');
+    }
+
+    public function checkins()
+    {
+        return $this->hasMany(GuestCheckin::class, 'invitation_guest_id');
+    }
+
+    public function doorprizeWins()
+    {
+        return $this->hasMany(DoorprizeWinner::class, 'invitation_guest_id');
+    }
+
 
 }

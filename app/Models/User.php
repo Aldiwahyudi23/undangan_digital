@@ -55,5 +55,8 @@ class User extends Authenticatable
         return $this->is_active;
     }
 
-    
+    public function invitations()
+    {
+        return $this->belongsToMany(Invitation::class, 'user_invitation');
+    }
 }

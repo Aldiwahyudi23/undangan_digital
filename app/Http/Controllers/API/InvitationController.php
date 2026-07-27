@@ -7,6 +7,7 @@ use App\Models\Attendance;
 use App\Models\Event;
 use App\Models\Invitation;
 use App\Models\InvitationGuest;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -338,8 +339,13 @@ class InvitationController extends Controller
                     'type' => $event->type,
                     'title' => $event->title,
                     'date' => $event->date,
-                    'start_time' => $event->start_time,
-                    'end_time' => $event->end_time,
+                    'start_time' => $event->start_time
+                        ? Carbon::parse($event->start_time)->format('H:i')
+                        : null,
+
+                    'end_time' => $event->end_time
+                        ? Carbon::parse($event->end_time)->format('H:i')
+                        : null,
                     'notes' => $event->notes,
                     'metadata' => $event->metadata,
                     'image' => $event->image ? asset('storage/' . $event->image->path) : null,

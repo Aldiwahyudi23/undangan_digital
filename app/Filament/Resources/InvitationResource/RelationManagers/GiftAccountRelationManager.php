@@ -19,7 +19,15 @@ class GiftAccountRelationManager extends RelationManager
         return $form
             ->schema([
                 Forms\Components\Select::make('couple_id')
-                    ->relationship('couple', 'full_name')
+                        ->label('Pengantin')
+                        ->relationship(
+                            name: 'couple',
+                            titleAttribute: 'full_name',
+                            modifyQueryUsing: fn (Builder $query) => $query->where(
+                                'invitation_id',
+                                $this->getOwnerRecord()->id
+                            )
+                        )
                     ->required()
                     ->searchable()
                     ->preload(),

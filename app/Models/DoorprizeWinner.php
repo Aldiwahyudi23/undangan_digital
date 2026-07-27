@@ -4,37 +4,22 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class LiveChat extends Model
+class DoorprizeWinner extends Model
 {
     protected $fillable = [
         'invitation_id',
         'invitation_guest_id',
-        'message',
-        'type',
-        'is_deleted'
+        'prize',
+        'session',
     ];
 
-    /**
-     * 🔗 Relasi ke Invitation (Live)
-     */
     public function invitation()
     {
         return $this->belongsTo(Invitation::class);
     }
 
-    /**
-     * 🔗 Relasi ke Guest
-     */
     public function guest()
     {
         return $this->belongsTo(InvitationGuest::class, 'invitation_guest_id');
-    }
-
-    /**
-     * 🎯 Accessor: ambil nama guest langsung
-     */
-    public function getGuestNameAttribute()
-    {
-        return $this->guest->name ?? 'Guest';
     }
 }

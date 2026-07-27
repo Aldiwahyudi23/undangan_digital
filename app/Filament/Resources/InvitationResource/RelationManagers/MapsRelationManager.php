@@ -8,6 +8,7 @@ use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables;
 use Filament\Tables\Actions\Action;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 
 class MapsRelationManager extends RelationManager
 {
@@ -36,7 +37,14 @@ class MapsRelationManager extends RelationManager
                     ->url(),
                 Forms\Components\Select::make('image_id')
                     ->label('Foto Event')
-                    ->relationship('image', 'title')
+                    ->relationship(
+                        name: 'image',
+                        titleAttribute: 'title',
+                        modifyQueryUsing: fn (Builder $query) => $query->where(
+                            'invitation_id',
+                            $this->getOwnerRecord()->id
+                        )
+                    )
                     ->searchable()
                     ->preload(),
                 Forms\Components\Textarea::make('notes')

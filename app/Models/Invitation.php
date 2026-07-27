@@ -73,4 +73,39 @@ class Invitation extends Model
     {
         return $this->hasMany(Attendance::class);
     }
+
+    public function barcodeBatches()
+    {
+        return $this->hasMany(BarcodePdfBatch::class);
+    }
+
+    public function invitationBarcodes()
+    {
+        return $this->hasMany(InvitationBarcode::class);
+    }
+
+    public function guestCheckins()
+    {
+        return $this->hasMany(GuestCheckin::class);
+    }
+
+    public function doorprizeWinners()
+    {
+        return $this->hasMany(DoorprizeWinner::class);
+    }
+
+    public function barcodes()
+    {
+        return $this->hasManyThrough(InvitationBarcode::class, InvitationGuest::class);
+    }
+
+    public function checkins()
+    {
+        return $this->hasManyThrough(GuestCheckin::class, InvitationGuest::class);
+    }
+
+    public function users()
+    {
+        return $this->belongsToMany(User::class, 'user_invitation');
+    }
 }
