@@ -16,16 +16,32 @@ composer test                     # config:clear + php artisan test
 
 - **Admin Panel** at `/admin` — Filament 3.3, auto-discovered from `app/Filament/Resources/`, `app/Filament/Pages/`, `app/Filament/Widgets/`
 - **Guest API** at `/api/guest/*` — Sanctum token auth via invitation link. Custom middleware: `ability`, `validate.guest.device` (registered in `bootstrap/app.php`)
+- **Receptionist API** at `/api/receptionist/*` — separate Sanctum auth with `receptionist` role middleware. Login at `POST /api/receptionist/login`
 - **Guest auth flow**: `GET /api/guest/invitation/{uuid}` returns a Sanctum token → use as Bearer token for all protected endpoints
 
 ### Key packages
 
-- `spatie/laravel-permission` + `filament-shield` — RBAC for admin panel. Role `super_admin` seeded via `AdminUserSeeder`
+- `spatie/laravel-permission` + `filament-shield` — RBAC for admin panel. Role `super_admin` seeded via `AdminUserSeeder`, `receptionist` via `ReceptionistUserSeeder`
 - `spatie/laravel-medialibrary` — image/media management
 - `pusher/pusher-php-server` — realtime broadcasts (live chat)
-- Agora — video/live streaming (token generation at `app/Services/Agora/`)
+- Agora — video/live streaming (token builders at `app/Services/Agora/`)
+- `barryvdh/laravel-dompdf` — PDF generation (barcodes)
+- `simplesoftwareio/simple-qrcode` — QR code generation
+- `spatie/eloquent-sortable` — drag-and-drop ordering
 - `laravel/pail` — log viewer in CLI (`composer dev` includes it)
 - `predis/predis` — Redis client (production dependency, used for queue/cache/session)
+
+### Filament resources
+
+Resources are grouped into subdirectories under `app/Filament/Resources/`:
+- `InvitationResource/` — main resource with ~15 relation managers (guests, events, couples, images, maps, stories, attendance, gifts, barcodes, doorprizes, etc.)
+- `ManagementUser/` — `UserResource` and `RoleResource` for admin user/role management
+- `API/` — `ApiAccountResource` for external API token management
+
+After adding or modifying Filament resources, regenerate permissions:
+```bash
+php artisan shield:generate --all
+```
 
 ### Models
 
@@ -34,10 +50,14 @@ composer test                     # config:clear + php artisan test
 | `User` | Admin user (Filament login) |
 | `Invitation` | An invitation event grouping |
 | `InvitationGuest` | Guest user (API consumer via Sanctum) |
+| `InvitationBarcode` | Barcode per guest for check-in |
+| `BarcodePdfBatch` | Batch PDF generation of barcodes |
 | `Couple`, `Event`, `Map`, `Story` | Invitation content components |
 | `FamilyMember` | Family members of the couple |
 | `Image`, `ImagePlacement` | Image management and layout placement |
 | `Attendance`, `GiftAccount`, `GiftTransaction` | RSVP / gift tracking |
+| `GuestCheckin` | Physical check-in records |
+| `DoorprizeWinner` | Doorprize spin winners |
 | `Post`, `PostLike` | Guest moments & statuses |
 | `LiveChat` | Live stream chat messages |
 

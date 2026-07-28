@@ -10,6 +10,7 @@ use App\Http\Controllers\API\VehicleController;
 use App\Http\Controllers\InvitationAccessController;
 use Illuminate\Support\Facades\Route;
 
+// ln -s /home/u516139464/domains/management-undangan-api.keluargamahaya.com/public_html/storage/app/public /home/u516139464/domains/management-undangan-api.keluargamahaya.com/public_html/public/storage
 
  Route::prefix('agora')->group(function () {
         Route::get('/token', [AgoraController::class, 'token']);
@@ -97,6 +98,13 @@ use App\Http\Controllers\Api\Receptionist\GuestSearchController;
 use App\Http\Controllers\Api\Receptionist\CheckinController;
 use App\Http\Controllers\Api\Receptionist\ManualCheckinController;
 use App\Http\Controllers\Api\Receptionist\DoorprizeController;
+use App\Http\Controllers\Api\Receptionist\DashboardCheckinController;
+
+use App\Http\Controllers\Api\Pengantin\AuthController as PengantinAuthController;
+use App\Http\Controllers\Api\Pengantin\DashboardController as PengantinDashboardController;
+use App\Http\Controllers\Api\Pengantin\DashboardCheckinController as PengantinDashboardCheckinController;
+use App\Http\Controllers\Api\Pengantin\GuestSearchController as PengantinGuestSearchController;
+use App\Http\Controllers\Api\Pengantin\DoorprizeController as PengantinDoorprizeController;
 
 Route::get('/test', function () {
     return response()->json([
@@ -117,6 +125,7 @@ Route::prefix('receptionist')
         Route::post('/logout', [AuthController::class, 'logout']);
         Route::get('/me', [AuthController::class, 'me']);
         Route::get('/dashboard', DashboardController::class);
+        Route::get('/guests/checkins', [DashboardCheckinController::class, 'index']);
         Route::get('/guests/search', [GuestSearchController::class, 'search']);
         Route::post('/checkin', [CheckinController::class, 'checkin']);
         Route::post('/checkout', [CheckinController::class, 'checkout']);
@@ -124,6 +133,25 @@ Route::prefix('receptionist')
         Route::post('/checkout/manual', [ManualCheckinController::class, 'checkout']);
         Route::post('/doorprize/spin', [DoorprizeController::class, 'spin']);
         Route::post('/doorprize/save', [DoorprizeController::class, 'store']);
+    });
+
+// Pengantin Auth (public)
+Route::prefix('pengantin')->group(function () {
+    Route::post('/login', [PengantinAuthController::class, 'login']);
+});
+
+// Pengantin Protected
+Route::prefix('pengantin')
+    ->middleware(['auth:sanctum', 'pengantin'])
+    ->group(function () {
+        Route::post('/logout', [PengantinAuthController::class, 'logout']);
+        Route::get('/me', [PengantinAuthController::class, 'me']);
+        Route::get('/dashboard', PengantinDashboardController::class);
+        Route::get('/guests/checkins', [PengantinDashboardCheckinController::class, 'index']);
+        Route::get('/guests/search', [PengantinGuestSearchController::class, 'search']);
+        Route::get('/doorprizes', [PengantinDoorprizeController::class, 'index']);
+        Route::post('/doorprize/spin', [PengantinDoorprizeController::class, 'spin']);
+        Route::post('/doorprize/save', [PengantinDoorprizeController::class, 'store']);
     });
 
 // 4|X7UtX7mRImr0FDmFekFRKxjMZQvXaeihxcroOM1a20ef4c00

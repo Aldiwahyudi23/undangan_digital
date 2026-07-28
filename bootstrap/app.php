@@ -17,6 +17,7 @@ return Application::configure(basePath: dirname(__DIR__))
              'ability' => \App\Http\Middleware\CheckTokenAbility::class,
              'validate.guest.device' => \App\Http\Middleware\ValidateGuestDevice::class,
              'receptionist' => \App\Http\Middleware\ReceptionistRole::class,
+             'pengantin' => \App\Http\Middleware\PengantinRole::class,
          ]);
     })
     
