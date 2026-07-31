@@ -2,40 +2,46 @@
 
 namespace App\Filament\Resources\InvitationResource\RelationManagers;
 
+use App\Filament\Forms\BarcodePdfSettingsForm;
 use App\Models\BarcodePdfBatch;
 use App\Models\InvitationBarcode;
-use Barryvdh\DomPDF\Facade\Pdf;
+use App\Services\BarcodePdfService;
 use Filament\Forms;
 use Filament\Forms\Form;
+use Filament\Notifications\Notification;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Filament\Notifications\Notification;
 use Illuminate\Support\Facades\Storage;
-use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 class BarcodePdfBatchesRelationManager extends RelationManager
 {
     protected static string $relationship = 'barcodeBatches';
+
     protected static ?string $title = 'Batch Barcode PDF';
 
     public function form(Form $form): Form
     {
         return $form
             ->schema([
-                Forms\Components\TextInput::make('title')
-                    ->required()
-                    ->label('Judul Batch')
-                    ->maxLength(255)
-                    ->placeholder('Contoh: Batch 001'),
+                Forms\Components\Grid::make(2)
+                    ->schema([
+                        Forms\Components\TextInput::make('title')
+                            ->required()
+                            ->label('Judul Batch')
+                            ->maxLength(255)
+                            ->placeholder('Contoh: Batch 001'),
 
-                Forms\Components\TextInput::make('quantity')
-                    ->required()
-                    ->numeric()
-                    ->label('Jumlah Barcode')
-                    ->minValue(1)
-                    ->maxValue(1000)
-                    ->placeholder('Contoh: 100'),
+                        Forms\Components\TextInput::make('quantity')
+                            ->required()
+                            ->numeric()
+                            ->label('Jumlah Barcode')
+                            ->minValue(1)
+                            ->maxValue(1000)
+                            ->placeholder('Contoh: 100'),
+                    ]),
+
+                ...BarcodePdfSettingsForm::schema(),
             ]);
     }
 
@@ -78,8 +84,11 @@ class BarcodePdfBatchesRelationManager extends RelationManager
                     ->label('Generate Batch Barcode')
                     ->icon('heroicon-o-qr-code')
                     ->color('success')
+                    ->modalWidth('7xl')
                     ->mutateFormDataUsing(function (array $data): array {
                         $data['invitation_id'] = $this->getOwnerRecord()->id;
+                        $data['pdf_settings'] = BarcodePdfSettingsForm::normalize($data);
+
                         return $data;
                     })
                     ->after(function ($record) {
@@ -99,24 +108,30 @@ class BarcodePdfBatchesRelationManager extends RelationManager
                     ->icon('heroicon-o-document-arrow-down')
                     ->color('primary')
                     ->url(function ($record) {
-                        if (!$record->pdf_path) {
+                        if (! $record->pdf_path) {
                             return null;
                         }
+
                         return Storage::url($record->pdf_path);
                     })
                     ->openUrlInNewTab()
-                    ->disabled(fn ($record) => !$record->pdf_path),
+                    ->disabled(fn ($record) => ! $record->pdf_path),
 
                 Tables\Actions\Action::make('regenerate_pdf')
                     ->label('Regenerate PDF')
                     ->icon('heroicon-o-arrow-path')
                     ->color('warning')
-                    ->requiresConfirmation()
+                    ->modalWidth('7xl')
                     ->modalHeading('Regenerate PDF')
-                    ->modalDescription('PDF akan digenerate ulang dari barcode yang sudah ada.')
+                    ->modalDescription('Atur ulang layout label, lalu PDF akan digenerate ulang dari barcode yang sudah ada.')
                     ->modalSubmitActionLabel('Ya, Regenerate')
-                    ->action(function ($record) {
-                        $this->generatePdf($record);
+                    ->form(BarcodePdfSettingsForm::schema())
+                    ->fillForm(fn ($record) => BarcodePdfSettingsForm::normalize($record->pdf_settings ?? []))
+                    ->action(function ($record, array $data) {
+                        $settings = BarcodePdfSettingsForm::normalize($data);
+                        $record->update(['pdf_settings' => $settings]);
+
+                        $this->generatePdf($record, $settings);
 
                         Notification::make()
                             ->title('PDF Berhasil Diregenerate')
@@ -143,7 +158,7 @@ class BarcodePdfBatchesRelationManager extends RelationManager
 
         $barcodes = [];
         for ($i = 1; $i <= $quantity; $i++) {
-            $code = 'BC' . str_pad($lastNumber + $i, 6, '0', STR_PAD_LEFT);
+            $code = 'BC'.str_pad($lastNumber + $i, 6, '0', STR_PAD_LEFT);
 
             $barcodes[] = [
                 'invitation_id' => $invitationId,
@@ -161,36 +176,8 @@ class BarcodePdfBatchesRelationManager extends RelationManager
         InvitationBarcode::insert($barcodes);
     }
 
-    protected function generatePdf(BarcodePdfBatch $batch): void
+    protected function generatePdf(BarcodePdfBatch $batch, ?array $settings = null): void
     {
-        $barcodes = $batch->barcodes()->orderBy('barcode_code')->get();
-
-        $qrSvgs = [];
-        foreach ($barcodes as $barcode) {
-            $qrSvgs[$barcode->id] = base64_encode(
-                QrCode::format('svg')
-                    ->size(180)
-                    ->margin(1)
-                    ->generate($barcode->barcode_token)
-            );
-        }
-
-        $pdf = Pdf::loadView('pdf.barcode-batch', [
-            'batch' => $batch,
-            'barcodes' => $barcodes,
-            'qrSvgs' => $qrSvgs,
-        ])->setPaper('a4');
-
-        $filename = "barcode-batches/{$batch->uuid}.pdf";
-        $path = storage_path('app/public/' . $filename);
-
-        $dir = dirname($path);
-        if (!is_dir($dir)) {
-            mkdir($dir, 0755, true);
-        }
-
-        file_put_contents($path, $pdf->output());
-
-        $batch->update(['pdf_path' => $filename]);
+        BarcodePdfService::generatePdf($batch, $settings);
     }
 }

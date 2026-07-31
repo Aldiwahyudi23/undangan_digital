@@ -2,17 +2,22 @@
 
 namespace App\Filament\Resources\InvitationResource\RelationManagers;
 
+use App\Filament\Forms\BarcodePdfSettingsForm;
 use App\Models\InvitationBarcode;
+use App\Services\BarcodePdfService;
 use Filament\Forms;
 use Filament\Forms\Form;
+use Filament\Notifications\Notification;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Filament\Notifications\Notification;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Collection;
 
 class InvitationBarcodesRelationManager extends RelationManager
 {
     protected static string $relationship = 'invitationBarcodes';
+
     protected static ?string $title = 'Semua Barcode';
 
     public function form(Form $form): Form
@@ -44,10 +49,10 @@ class InvitationBarcodesRelationManager extends RelationManager
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('batch.title')
-                    ->label('Batch')
-                    ->placeholder('-')
+                    ->label('PDF')
                     ->badge()
-                    ->color('info'),
+                    ->color(fn ($record) => $record->batch ? 'success' : 'gray')
+                    ->formatStateUsing(fn ($state, $record) => $record->batch ? $state : 'Belum ada PDF'),
 
                 Tables\Columns\IconColumn::make('is_used')
                     ->label('Status')
@@ -89,6 +94,21 @@ class InvitationBarcodesRelationManager extends RelationManager
                             ->toArray();
                     })
                     ->native(false),
+
+                Tables\Filters\SelectFilter::make('pdf_status')
+                    ->label('Status PDF')
+                    ->options([
+                        'has_pdf' => 'Sudah Ada PDF',
+                        'no_pdf' => 'Belum Ada PDF',
+                    ])
+                    ->query(function (Builder $query, array $data) {
+                        if ($data['value'] === 'has_pdf') {
+                            $query->whereNotNull('barcode_pdf_batch_id');
+                        } elseif ($data['value'] === 'no_pdf') {
+                            $query->whereNull('barcode_pdf_batch_id');
+                        }
+                    })
+                    ->native(false),
             ])
             ->headerActions([])
             ->actions([
@@ -123,6 +143,7 @@ class InvitationBarcodesRelationManager extends RelationManager
                                     ->where('invitation_type', 'physical')
                                     ->whereDoesntHave('barcodes')
                                     ->count();
+
                                 return "{$count} tamu physical belum terkait barcode";
                             }),
                     ])
@@ -133,6 +154,7 @@ class InvitationBarcodesRelationManager extends RelationManager
                                 ->body('Barcode ini sudah terkait dengan tamu lain.')
                                 ->danger()
                                 ->send();
+
                             return;
                         }
 
@@ -147,7 +169,7 @@ class InvitationBarcodesRelationManager extends RelationManager
                             ->success()
                             ->send();
                     })
-                    ->visible(fn ($record) => !$record->invitation_guest_id),
+                    ->visible(fn ($record) => ! $record->invitation_guest_id),
 
                 Tables\Actions\Action::make('disconnect_guest')
                     ->label('Putuskan')
@@ -171,7 +193,56 @@ class InvitationBarcodesRelationManager extends RelationManager
                     })
                     ->visible(fn ($record) => $record->invitation_guest_id),
             ])
-            ->bulkActions([])
+            ->bulkActions([
+                Tables\Actions\BulkActionGroup::make([
+                    Tables\Actions\BulkAction::make('generate_pdf')
+                        ->label('Generate PDF Terpilih')
+                        ->icon('heroicon-o-document-arrow-down')
+                        ->color('success')
+                        ->modalWidth('7xl')
+                        ->modalHeading('Generate PDF dari Barcode Terpilih')
+                        ->modalDescription('Barcode yang belum memiliki PDF akan dimasukkan ke dalam satu PDF baru.')
+                        ->modalSubmitActionLabel('Ya, Generate')
+                        ->deselectRecordsAfterCompletion()
+                        ->form(BarcodePdfSettingsForm::schema())
+                        ->action(function (Collection $records, array $data) {
+                            $invitation = $this->getOwnerRecord();
+
+                            $eligible = $records->filter(
+                                fn (InvitationBarcode $barcode) => is_null($barcode->barcode_pdf_batch_id)
+                            );
+
+                            if ($eligible->isEmpty()) {
+                                Notification::make()
+                                    ->title('Tidak Ada Barcode yang Bisa Digenerate')
+                                    ->body('Semua barcode terpilih sudah memiliki PDF.')
+                                    ->danger()
+                                    ->send();
+
+                                return;
+                            }
+
+                            $count = $eligible->count();
+                            $batch = $invitation->barcodeBatches()->create([
+                                'title' => 'Batch PDF '.str_pad($invitation->barcodeBatches()->count() + 1, 3, '0', STR_PAD_LEFT),
+                                'quantity' => $count,
+                                'pdf_settings' => BarcodePdfSettingsForm::normalize($data),
+                            ]);
+
+                            $eligible->each(fn (InvitationBarcode $barcode) => $barcode->update([
+                                'barcode_pdf_batch_id' => $batch->id,
+                            ]));
+
+                            BarcodePdfService::generatePdf($batch);
+
+                            Notification::make()
+                                ->title('PDF Berhasil Digenerate')
+                                ->body("{$count} barcode masuk ke PDF {$batch->title}.")
+                                ->success()
+                                ->send();
+                        }),
+                ]),
+            ])
             ->defaultSort('created_at', 'desc');
     }
 }

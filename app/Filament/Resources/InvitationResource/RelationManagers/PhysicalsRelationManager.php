@@ -5,15 +5,16 @@ namespace App\Filament\Resources\InvitationResource\RelationManagers;
 use App\Models\InvitationBarcode;
 use Filament\Forms;
 use Filament\Forms\Form;
+use Filament\Forms\Get;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use Filament\Notifications\Notification;
 
 class PhysicalsRelationManager extends RelationManager
 {
     protected static string $relationship = 'guests';
+
     protected static ?string $title = 'Tamu Physical';
 
     protected static ?string $recordTitleAttribute = 'name';
@@ -36,6 +37,17 @@ class PhysicalsRelationManager extends RelationManager
                     ->label('Group')
                     ->maxLength(100),
 
+                Forms\Components\TextInput::make('location_tag')
+                    ->label('Lokasi')
+                    ->helperText('Ditampilkan di label barcode (opsional)')
+                    ->maxLength(100),
+
+                Forms\Components\Toggle::make('create_new_barcode')
+                    ->label('Buat Barcode Baru')
+                    ->helperText('Aktifkan untuk membuat barcode baru sekaligus membuat tamu ini')
+                    ->default(false)
+                    ->live(),
+
                 Forms\Components\Select::make('invitation_barcode_id')
                     ->label('Barcode')
                     ->options(function () {
@@ -50,7 +62,8 @@ class PhysicalsRelationManager extends RelationManager
                     ->preload()
                     ->placeholder('Pilih barcode (opsional)')
                     ->helperText('Pilih barcode yang belum terpakai')
-                    ->nullable(),
+                    ->nullable()
+                    ->hidden(fn (Get $get) => $get('create_new_barcode')),
             ]);
     }
 
@@ -70,6 +83,13 @@ class PhysicalsRelationManager extends RelationManager
                     ->searchable()
                     ->badge()
                     ->color('primary')
+                    ->placeholder('-'),
+
+                Tables\Columns\TextColumn::make('location_tag')
+                    ->label('Lokasi')
+                    ->searchable()
+                    ->badge()
+                    ->color('info')
                     ->placeholder('-'),
 
                 Tables\Columns\TextColumn::make('share_whatsapp')
@@ -113,10 +133,13 @@ class PhysicalsRelationManager extends RelationManager
                     ->label('Tambah Tamu Physical')
                     ->mutateFormDataUsing(function (array $data): array {
                         $data['invitation_type'] = 'physical';
+
                         return $data;
                     })
                     ->after(function ($record, $data) {
-                        if (!empty($data['invitation_barcode_id'])) {
+                        if (! empty($data['create_new_barcode'])) {
+                            $this->createNewBarcodeForGuest($record);
+                        } elseif (! empty($data['invitation_barcode_id'])) {
                             InvitationBarcode::where('id', $data['invitation_barcode_id'])
                                 ->update([
                                     'invitation_guest_id' => $record->id,
@@ -129,7 +152,12 @@ class PhysicalsRelationManager extends RelationManager
                 Tables\Actions\EditAction::make()
                     ->label('Edit')
                     ->after(function ($record, $data) {
-                        if (!empty($data['invitation_barcode_id'])) {
+                        if (! empty($data['create_new_barcode'])) {
+                            $this->disconnectGuestBarcodes($record);
+                            $this->createNewBarcodeForGuest($record);
+                        } elseif (! empty($data['invitation_barcode_id'])) {
+                            $this->disconnectGuestBarcodes($record);
+
                             InvitationBarcode::where('id', $data['invitation_barcode_id'])
                                 ->update([
                                     'invitation_guest_id' => $record->id,
@@ -155,5 +183,42 @@ class PhysicalsRelationManager extends RelationManager
                 ]),
             ])
             ->defaultSort('created_at', 'desc');
+    }
+
+    protected function disconnectGuestBarcodes($guest): void
+    {
+        InvitationBarcode::where('invitation_guest_id', $guest->id)
+            ->update([
+                'invitation_guest_id' => null,
+                'is_used' => false,
+            ]);
+    }
+
+    protected function createNewBarcodeForGuest($guest): void
+    {
+        $invitationId = $guest->invitation_id;
+
+        $lastCode = InvitationBarcode::where('invitation_id', $invitationId)
+            ->where('barcode_code', 'like', 'BC%')
+            ->max('barcode_code');
+
+        if ($lastCode && preg_match('/^BC(\d+)$/', $lastCode, $matches)) {
+            $lastNumber = (int) $matches[1];
+        } else {
+            $lastNumber = 0;
+        }
+
+        do {
+            $lastNumber++;
+            $code = 'BC'.str_pad($lastNumber, 6, '0', STR_PAD_LEFT);
+        } while (InvitationBarcode::where('barcode_code', $code)->exists());
+
+        InvitationBarcode::create([
+            'invitation_id' => $invitationId,
+            'barcode_code' => $code,
+            'invitation_guest_id' => $guest->id,
+            'is_used' => true,
+            'generated_at' => now(),
+        ]);
     }
 }

@@ -2,17 +2,15 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Support\Str;
 use Laravel\Sanctum\HasApiTokens;
 
 class InvitationGuest extends Authenticatable
 {
+    use HasApiTokens;
 
- use HasApiTokens;
-
- protected $table = 'invitation_guests';
+    protected $table = 'invitation_guests';
 
     protected $fillable = [
         'invitation_id',
@@ -53,11 +51,10 @@ class InvitationGuest extends Authenticatable
         return $this->belongsTo(Invitation::class);
     }
 
-        public function attendance()
-        {
-            return $this->hasOne(Attendance::class, 'invitation_guest_id');
-        }
-
+    public function attendance()
+    {
+        return $this->hasOne(Attendance::class, 'invitation_guest_id');
+    }
 
     // 🔥 AUTO GENERATE UUID + TOKEN
     protected static function booted()
@@ -65,12 +62,12 @@ class InvitationGuest extends Authenticatable
         static::creating(function ($guest) {
 
             // UUID
-            if (!$guest->uuid) {
+            if (! $guest->uuid) {
                 $guest->uuid = (string) Str::uuid();
             }
 
             // Token
-            if (!$guest->token) {
+            if (! $guest->token) {
                 $guest->token = Str::random(40);
             }
 
@@ -87,16 +84,18 @@ class InvitationGuest extends Authenticatable
                 ];
             }
 
-                    // Created By
+            // Created By
+            $permissions = $guest->permissions ?? [];
+
             if (empty($permissions['created_by']) && auth()->check()) {
                 $permissions['created_by'] = auth()->user()->name;
             }
 
             $guest->permissions = $permissions;
-            });
+        });
     }
 
-  // Generate device fingerprint
+    // Generate device fingerprint
     public function getDeviceFingerprint($request)
     {
         $data = [
@@ -105,43 +104,43 @@ class InvitationGuest extends Authenticatable
             $request->header('x-device-id'), // Frontend kirim device ID
             $request->header('x-platform'),   // Platform info
         ];
-        
+
         return hash('sha256', implode('|', $data));
     }
-    
+
     // Register device
     public function registerDevice($fingerprint)
     {
         if ($this->is_locked) {
             throw new \Exception('Akun undangan telah di-lock.', 403);
         }
-        
+
         $currentDevices = $this->device_ids ?? [];
-        
-        if (!in_array($fingerprint, $currentDevices)) {
+
+        if (! in_array($fingerprint, $currentDevices)) {
             if (count($currentDevices) >= $this->max_device) {
                 throw new \Exception("Link undangan sudah digunakan di {$this->max_device} device berbeda.", 403);
             }
-            
+
             $currentDevices[] = $fingerprint;
             $this->device_ids = $currentDevices;
             $this->save();
         }
-        
+
         return true;
     }
-    
+
     // Update tracking
     public function updateTracking($request, $fingerprint)
     {
         $this->last_ip = $request->ip();
         $this->last_user_agent = $request->userAgent();
-        
-        if (!$this->is_opened) {
+
+        if (! $this->is_opened) {
             $this->is_opened = true;
             $this->opened_at = now();
         }
-        
+
         $this->save();
     }
 
@@ -165,6 +164,11 @@ class InvitationGuest extends Authenticatable
         return $this->hasMany(InvitationBarcode::class, 'invitation_guest_id');
     }
 
+    public function barcode()
+    {
+        return $this->hasOne(InvitationBarcode::class, 'invitation_guest_id');
+    }
+
     public function checkins()
     {
         return $this->hasMany(GuestCheckin::class, 'invitation_guest_id');
@@ -174,6 +178,4 @@ class InvitationGuest extends Authenticatable
     {
         return $this->hasMany(DoorprizeWinner::class, 'invitation_guest_id');
     }
-
-
 }

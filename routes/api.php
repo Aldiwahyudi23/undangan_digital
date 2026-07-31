@@ -105,6 +105,7 @@ use App\Http\Controllers\Api\Pengantin\DashboardController as PengantinDashboard
 use App\Http\Controllers\Api\Pengantin\DashboardCheckinController as PengantinDashboardCheckinController;
 use App\Http\Controllers\Api\Pengantin\GuestSearchController as PengantinGuestSearchController;
 use App\Http\Controllers\Api\Pengantin\DoorprizeController as PengantinDoorprizeController;
+use App\Http\Controllers\Api\Pengantin\BarcodeLinkController as PengantinBarcodeLinkController;
 
 Route::get('/test', function () {
     return response()->json([
@@ -131,8 +132,6 @@ Route::prefix('receptionist')
         Route::post('/checkout', [CheckinController::class, 'checkout']);
         Route::post('/checkin/manual', [ManualCheckinController::class, 'store']);
         Route::post('/checkout/manual', [ManualCheckinController::class, 'checkout']);
-        Route::post('/doorprize/spin', [DoorprizeController::class, 'spin']);
-        Route::post('/doorprize/save', [DoorprizeController::class, 'store']);
     });
 
 // Pengantin Auth (public)
@@ -152,6 +151,8 @@ Route::prefix('pengantin')
         Route::get('/doorprizes', [PengantinDoorprizeController::class, 'index']);
         Route::post('/doorprize/spin', [PengantinDoorprizeController::class, 'spin']);
         Route::post('/doorprize/save', [PengantinDoorprizeController::class, 'store']);
+        Route::get('/barcode/search', [PengantinBarcodeLinkController::class, 'searchBarcode']);
+        Route::post('/barcode/link', [PengantinBarcodeLinkController::class, 'store']);
     });
 
 // 4|X7UtX7mRImr0FDmFekFRKxjMZQvXaeihxcroOM1a20ef4c00
