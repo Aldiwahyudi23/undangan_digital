@@ -42,6 +42,19 @@ public function index(Request $request)
     // 🔥 FIX: cek langsung ke DB
     $hasAttendance = Attendance::where('invitation_guest_id', $guestId)->exists();
 
+    // 🔥 barcode tamu — hanya dikirim jika status kehadiran hadir (attending)
+    $isAttending = Attendance::where('invitation_guest_id', $guestId)
+        ->where('status', 'attending')
+        ->exists();
+
+    $barcodeData = null;
+    if ($isAttending && $guest->barcode) {
+        $barcodeData = [
+            'barcode_code' => $guest->barcode->barcode_code,
+            'barcode_token' => $guest->barcode->barcode_token,
+        ];
+    }
+
     // 🔥 format data
     $data = $attendances->map(function ($item) {
         return [
@@ -61,7 +74,8 @@ public function index(Request $request)
         'success' => true,
         'data' => $data,
         'meta' => [
-            'has_attendance' => $hasAttendance // ✅ FIXED
+            'has_attendance' => $hasAttendance, // ✅ FIXED
+            'barcode' => $barcodeData, // ✅ barcode tampil hanya jika hadir
         ]
     ]);
 }

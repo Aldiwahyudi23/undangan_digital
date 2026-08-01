@@ -16,6 +16,8 @@ composer test                     # config:clear + php artisan test
 
 - **Admin Panel** at `/admin` — Filament 3.3, auto-discovered from `app/Filament/`. Panel config in `app/Providers/Filament/AdminPanelProvider.php`.
 - **Guest API** at `/api/guest/*` — `auth:sanctum`. Login flow: `GET /api/guest/invitation/{uuid}` returns a Sanctum token (30-day expiry, abilities `['*']`) → send as `Authorization: Bearer`.
+  - Guest tokens are **device-scoped** (`app/Http/Controllers/InvitationAccessController.php`): a fingerprint is hashed from `x-device-id`/`user-agent`/`x-platform`/`x-app-version` headers, stored as `device_fingerprint` on the token row and in the guest's `device_ids` array, and capped by `max_device`. `/api/guest/{me,logout,devices}` rely on this fingerprint matching — don't strip those headers or the device-limit logic breaks.
+  - `loginViaLink` refuses login (403) once `now > lastEvent.date endOfDay + 3 days`.
 - **Receptionist API** at `/api/receptionist/*` — `auth:sanctum` + `receptionist` middleware. Login: `POST /api/receptionist/login`.
 - **Pengantin API** at `/api/pengantin/*` — `auth:sanctum` + `pengantin` middleware. Login: `POST /api/pengantin/login`. Doorprize spin + barcode→guest linking live here.
 
@@ -23,7 +25,7 @@ All three identities share the `User` model. Roles: `super_admin` (Filament admi
 
 Middleware aliases are registered in `bootstrap/app.php` (`ability`, `validate.guest.device`, `receptionist`, `pengantin`). Gotcha: `ability` (`CheckTokenAbility`) and `validate.guest.device` are registered but **never wired into routes or controllers** — only `receptionist`/`pengantin` are actually used.
 
-`routes/api.php` contains leftover dead code: an unauthenticated duplicate `live-chat` block (~lines 86-90), a stray public `GET /api/gift-accounts`, bearer tokens left in comments, and a `use` of `App\Http\Controllers\API\VehicleController` that doesn't exist. Don't trust that a route is intentional just because it lacks auth middleware.
+`routes/api.php` contains leftover dead code: an unauthenticated duplicate `live-chat` block (~lines 86-90), a stray public `GET /api/gift-accounts`, bearer tokens left in comments, and a `use` of `App\Http\Controllers\API\VehicleController` that doesn't exist. In contrast, the top-of-file public `agora` group (~lines 15-20) and `GET /test` are **intentional** unauthenticated routes — `AgoraController::token()` authenticates via `guest_uuid` param itself (and 403s unless a host is streaming). Don't trust that a route is intentional just because it lacks auth middleware; distinguish dead code from deliberately-public endpoints by reading the controller.
 
 ### Key packages
 
@@ -70,7 +72,7 @@ Repo hygiene: leftover `* copy.php` files exist (`app/Models/InvitationGuest cop
 Rendered by `app/Services/BarcodePdfService.php` → `resources/views/pdf/barcode-batch.blade.php`.
 
 - **DomPDF has NO `box-sizing` support** (`width`/`height` = content box). The blade compensates: card outer size = `label_size − 2×(1.5mm padding + border)` so the *outer* card equals `label_width_mm`/`label_height_mm` exactly. Do not reintroduce `box-sizing` assumptions.
-- Card layout (2-line instruction on top, then a real 2-column HTML table below a dashed divider): left cell = `Kepada YTH :` + guest `name` / `di` + `location_tag`, right cell = QR + `barcode_code`. The left cell is a **fixed 3-line template** (verified: same y-position on every card regardless of data) — `Kepada YTH :` always shows, the name line always shows (renders `&nbsp;` to keep its line height when the guest/name is missing), and `di <location_tag>` always shows with the location appended only if set. `vertical-align: middle` centers each cell's content.
+- Card layout (2-line instruction on top, then a real 2-column HTML table below a dashed divider): left cell = `Kepada Yth. :` + guest `name` / `di <location_tag>`, right cell = QR + `barcode_code`. The left cell is a **fixed 3-line template** (verified: same y-position on every card regardless of data) — `Kepada Yth. :` always shows, the name line always shows (renders `&nbsp;` to keep its line height when the guest/name is missing), and the `di` line always renders, defaulting to the literal `Tempat` when `location_tag` is unset. `vertical-align: middle` centers each cell's content.
 - **DomPDF table gotcha**: `table-layout: fixed` discards explicit mm widths (Cellmap treats them as `auto`), so tables render short of the requested width. Use **percentage widths on `<td>`** (`$qrCellPct = (qrSize + 2×2mm) / innerW × 100`) with the table at `width: innerW mm` — DomPDF's `_assign_widths` Case 3 scales percents to fill the table exactly (verified: QR right edge lands 2.00mm off the content right edge). Don't reintroduce `table-layout: fixed` or absolute-positioned columns.
 - Paper size via `setPaper([0,0,w,h], 'portrait')` in **points** (`mm × 72 / 25.4`). The PDF page is exact; if printed output measures short (e.g. 141→135mm), the print dialog is scaling to fit printable area — print at 100%/Actual size.
 - QR SVG data URIs embed fine (DomPDF renders SVG vectors). Use `@php` sizing vars *before* `<head>` so the `<style>` block can reference them.

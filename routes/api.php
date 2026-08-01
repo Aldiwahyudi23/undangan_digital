@@ -152,6 +152,7 @@ Route::prefix('pengantin')
         Route::post('/doorprize/spin', [PengantinDoorprizeController::class, 'spin']);
         Route::post('/doorprize/save', [PengantinDoorprizeController::class, 'store']);
         Route::get('/barcode/search', [PengantinBarcodeLinkController::class, 'searchBarcode']);
+        Route::post('/barcode/scan', [PengantinBarcodeLinkController::class, 'scanBarcode']);
         Route::post('/barcode/link', [PengantinBarcodeLinkController::class, 'store']);
     });
 

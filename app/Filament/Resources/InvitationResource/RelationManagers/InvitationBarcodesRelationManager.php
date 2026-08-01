@@ -48,6 +48,12 @@ class InvitationBarcodesRelationManager extends RelationManager
                     ->searchable()
                     ->sortable(),
 
+                Tables\Columns\TextColumn::make('jenis')
+                    ->label('Jenis')
+                    ->getStateUsing(fn (InvitationBarcode $record) => $record->guest?->invitation_type === 'digital' ? 'Digital' : 'Physical')
+                    ->badge()
+                    ->color(fn (string $state): string => $state === 'Digital' ? 'warning' : 'success'),
+
                 Tables\Columns\TextColumn::make('batch.title')
                     ->label('PDF')
                     ->badge()
@@ -70,6 +76,25 @@ class InvitationBarcodesRelationManager extends RelationManager
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
+                Tables\Filters\SelectFilter::make('jenis')
+                    ->label('Jenis')
+                    ->options([
+                        'physical' => 'Physical',
+                        'digital' => 'Digital',
+                    ])
+                    ->default('physical')
+                    ->query(function (Builder $query, array $data) {
+                        if ($data['value'] === 'physical') {
+                            $query->where(function (Builder $q) {
+                                $q->whereNull('invitation_guest_id')
+                                    ->orWhereHas('guest', fn (Builder $g) => $g->where('invitation_type', 'physical'));
+                            });
+                        } elseif ($data['value'] === 'digital') {
+                            $query->whereHas('guest', fn (Builder $g) => $g->where('invitation_type', 'digital'));
+                        }
+                    })
+                    ->native(false),
+
                 Tables\Filters\SelectFilter::make('status')
                     ->label('Status')
                     ->options([
@@ -210,6 +235,7 @@ class InvitationBarcodesRelationManager extends RelationManager
 
                             $eligible = $records->filter(
                                 fn (InvitationBarcode $barcode) => is_null($barcode->barcode_pdf_batch_id)
+                                    && $barcode->guest?->invitation_type !== 'digital'
                             );
 
                             if ($eligible->isEmpty()) {

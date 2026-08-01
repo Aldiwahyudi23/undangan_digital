@@ -50,6 +50,48 @@ class BarcodeLinkController extends Controller
         ]);
     }
 
+    public function scanBarcode(Request $request)
+    {
+        $request->validate([
+            'barcode_token' => 'required|string',
+            'invitation_id' => 'required|exists:invitations,id',
+        ]);
+
+        $hasAccess = $request->user()->invitations->contains('id', $request->invitation_id);
+
+        if (!$hasAccess) {
+            return response()->json([
+                'message' => 'Anda tidak memiliki akses ke invitation ini.',
+            ], 403);
+        }
+
+        $barcode = InvitationBarcode::where('barcode_token', $request->barcode_token)
+            ->where('invitation_id', $request->invitation_id)
+            ->with('guest')
+            ->first();
+
+        if (!$barcode) {
+            return response()->json([
+                'message' => 'Barcode tidak ditemukan.',
+            ], 404);
+        }
+
+        return response()->json([
+            'data' => [
+                'id' => $barcode->id,
+                'barcode_code' => $barcode->barcode_code,
+                'barcode_token' => $barcode->barcode_token,
+                'is_used' => $barcode->is_used,
+                'guest' => $barcode->guest ? [
+                    'id' => $barcode->guest->id,
+                    'name' => $barcode->guest->name,
+                    'group_name' => $barcode->guest->group_name,
+                    'invitation_type' => $barcode->guest->invitation_type,
+                ] : null,
+            ],
+        ]);
+    }
+
     public function store(Request $request)
     {
         $request->validate([
