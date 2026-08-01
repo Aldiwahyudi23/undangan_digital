@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Attendance;
 use App\Models\GiftAccount;
 use App\Models\InvitationGuest;
+use App\Services\BarcodeQrService;
 use Illuminate\Http\Request;
 
 class AttendanceController extends Controller
@@ -50,8 +51,8 @@ public function index(Request $request)
     $barcodeData = null;
     if ($isAttending && $guest->barcode) {
         $barcodeData = [
-            'barcode_code' => $guest->barcode->barcode_code,
-            'barcode_token' => $guest->barcode->barcode_token,
+            'barcode_url' => BarcodeQrService::content($guest->barcode),
+            'barcode_svg' => BarcodeQrService::svg($guest->barcode),
         ];
     }
 

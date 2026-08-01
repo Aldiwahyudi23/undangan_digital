@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\Pengantin;
 use App\Http\Controllers\Controller;
 use App\Models\InvitationBarcode;
 use App\Models\InvitationGuest;
+use App\Services\BarcodeQrService;
 use Illuminate\Http\Request;
 
 class BarcodeLinkController extends Controller
@@ -65,7 +66,7 @@ class BarcodeLinkController extends Controller
             ], 403);
         }
 
-        $barcode = InvitationBarcode::where('barcode_token', $request->barcode_token)
+        $barcode = InvitationBarcode::where('barcode_token', BarcodeQrService::extractToken($request->barcode_token))
             ->where('invitation_id', $request->invitation_id)
             ->with('guest')
             ->first();
@@ -80,7 +81,7 @@ class BarcodeLinkController extends Controller
             'data' => [
                 'id' => $barcode->id,
                 'barcode_code' => $barcode->barcode_code,
-                'barcode_token' => $barcode->barcode_token,
+                'barcode_url' => BarcodeQrService::content($barcode),
                 'is_used' => $barcode->is_used,
                 'guest' => $barcode->guest ? [
                     'id' => $barcode->guest->id,

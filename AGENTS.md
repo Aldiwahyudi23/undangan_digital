@@ -41,10 +41,11 @@ Grouped under `app/Filament/Resources/`:
 - `InvitationResource/` — main resource with 16 relation managers (guests, events, couples, images, maps, stories, attendance, gifts, barcodes, doorprizes, etc.)
 - `ManagementUser/` — `UserResource`, `RoleResource`
 - `API/` — `ApiAccountResource` for external API tokens (lists `vehicles:*` abilities, but no vehicle controller exists in the repo)
+- `BarcodePdfTemplateResource/` — top-level (not grouped) — saved label-layout presets for the barcode PDF feature
 
 ### Seeders — gotcha
 
-`DatabaseSeeder` only calls `AdminUserSeeder` + `ReceptionistUserSeeder`. **`PengantinUserSeeder` is not included** — run `php artisan db:seed --class=PengantinUserSeeder` manually to create the `pengantin` role/user. Logins: admin `aldiwahyudi1223@gmail.com`, `resepsionis@undangan.test`, `pengantin@undangan.test` (credentials in the seeders). Receptionist/pengantin seeders also attach the user only to the **first** invitation.
+`DatabaseSeeder` only calls `AdminUserSeeder` + `ReceptionistUserSeeder`. **`PengantinUserSeeder` is not included** — run `php artisan db:seed --class=PengantinUserSeeder` manually to create the `pengantin` role/user. **`BarcodePdfTemplateSeeder` is also not included** — run it once (`php artisan db:seed --class=BarcodePdfTemplateSeeder`) or the barcode PDF feature has no label-layout presets. Logins: admin `aldiwahyudi1223@gmail.com`, `resepsionis@undangan.test`, `pengantin@undangan.test` (credentials in the seeders). Receptionist/pengantin seeders also attach the user only to the **first** invitation.
 
 ### Models
 

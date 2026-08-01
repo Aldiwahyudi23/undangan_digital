@@ -40,4 +40,8 @@ return [
         'token' => env('VEHICLE_API_TOKEN'),
     ],
 
+    'barcode' => [
+        'base_url' => env('BARCODE_BASE_URL', 'https://fixnikah-mira-aldi.keluargamahaya.com'),
+    ],
+
 ];

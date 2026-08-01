@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\InvitationBarcode;
 use App\Models\GuestCheckin;
 use App\Events\CheckinUpdated;
+use App\Services\BarcodeQrService;
 use Illuminate\Http\Request;
 
 class CheckinController extends Controller
@@ -18,7 +19,7 @@ class CheckinController extends Controller
             'attended_people' => 'nullable|integer|min:1',
         ]);
 
-        $barcode = InvitationBarcode::where('barcode_token', $request->barcode_token)
+        $barcode = InvitationBarcode::where('barcode_token', BarcodeQrService::extractToken($request->barcode_token))
             ->with('guest')
             ->first();
 
@@ -99,7 +100,7 @@ class CheckinController extends Controller
             'barcode_token' => 'required|string',
         ]);
 
-        $barcode = InvitationBarcode::where('barcode_token', $request->barcode_token)
+        $barcode = InvitationBarcode::where('barcode_token', BarcodeQrService::extractToken($request->barcode_token))
             ->with('guest')
             ->first();
 

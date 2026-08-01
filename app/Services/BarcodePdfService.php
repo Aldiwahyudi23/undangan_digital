@@ -21,7 +21,7 @@ class BarcodePdfService
                 QrCode::format('svg')
                     ->size(180)
                     ->margin(1)
-                    ->generate($barcode->barcode_token)
+                    ->generate(BarcodeQrService::content($barcode))
             );
         }
 

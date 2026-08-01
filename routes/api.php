@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\InvitationController;
 use App\Http\Controllers\Api\LiveChatController;
 use App\Http\Controllers\Api\LiveController;
 use App\Http\Controllers\Api\PostController;
+use App\Http\Controllers\Api\PublicBarcodeController;
 use App\Http\Controllers\API\VehicleController;
 use App\Http\Controllers\InvitationAccessController;
 use Illuminate\Support\Facades\Route;
@@ -19,6 +20,9 @@ use Illuminate\Support\Facades\Route;
         Route::get('/status', [AgoraController::class, 'status']);
     });
 // Public routes (tanpa auth)
+// Barcode publik — data barcode + tamu untuk halaman download frontend
+Route::get('/barcode/{token}', [PublicBarcodeController::class, 'show']);
+
 Route::prefix('guest')->group(function () {
     // Login via link undangan
     Route::get('/invitation/{uuid}', [InvitationAccessController::class, 'loginViaLink']);

@@ -124,8 +124,13 @@ class ImagesRelationManager extends RelationManager
                             // resize + compress
                             $image->scale(width: 1280);
 
-                            // simpan
-                            $image->toJpeg(70)->save(storage_path('app/public/' . $path));
+                            $savePath = storage_path('app/public/' . $path);
+                            $saveDir = dirname($savePath);
+                            if (!is_dir($saveDir)) {
+                                mkdir($saveDir, 0755, true);
+                            }
+
+                            $image->toJpeg(70)->save($savePath);
 
                             return $path;
                         })
