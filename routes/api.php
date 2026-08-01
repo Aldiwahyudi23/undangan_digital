@@ -20,8 +20,15 @@ use Illuminate\Support\Facades\Route;
         Route::get('/status', [AgoraController::class, 'status']);
     });
 // Public routes (tanpa auth)
+// Barcode publik — cari tamu & verifikasi kode untuk mendapatkan token
+Route::get('/barcode/search', [PublicBarcodeController::class, 'search']);
+Route::post('/barcode/verify', [PublicBarcodeController::class, 'verify']);
+
 // Barcode publik — data barcode + tamu untuk halaman download frontend
 Route::get('/barcode/{token}', [PublicBarcodeController::class, 'show']);
+
+// Moment publik — daftar moment (tanpa auth), dipakai halaman barcode
+Route::post('/posts/moments', [PostController::class, 'createMoment']);
 
 Route::prefix('guest')->group(function () {
     // Login via link undangan
