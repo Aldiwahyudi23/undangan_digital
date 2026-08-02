@@ -44,4 +44,8 @@ return [
         'base_url' => env('BARCODE_BASE_URL', 'https://fixnikah-mira-aldi.keluargamahaya.com'),
     ],
 
+    'photobooth' => [
+        'verify_url' => env('PHOTOBOOTH_VERIFY_URL', 'https://fixnikah.miraaldi.my.id/moment/verify'),
+    ],
+
 ];

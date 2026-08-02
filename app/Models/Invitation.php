@@ -108,4 +108,9 @@ class Invitation extends Model
     {
         return $this->belongsToMany(User::class, 'user_invitation');
     }
+
+    public function photoboothTemplates()
+    {
+        return $this->hasMany(PhotoboothTemplate::class)->orderBy('sort_order');
+    }
 }

@@ -4,6 +4,7 @@ namespace App\Filament\Resources\InvitationResource\RelationManagers;
 
 use Filament\Forms;
 use Filament\Forms\Form;
+use Filament\Forms\Get;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -38,6 +39,7 @@ class PostRelationManager extends RelationManager
                     ->options([
                         'moment' => 'Moment',
                         'status' => 'Status',
+                        'voice' => 'Voice Note',
                     ])
                     ->required()
                     ->native(false),
@@ -48,17 +50,35 @@ class PostRelationManager extends RelationManager
                     ->rows(3)
                     ->columnSpanFull(),
                 
-                            Forms\Components\SpatieMediaLibraryFileUpload::make('media')
-                ->label('Gambar/Video')
-                ->collection('post_media')
-                ->multiple()
-                ->image() // Untuk gambar
-                // Video tetap bisa upload tanpa method video()
-                ->acceptedFileTypes(['image/jpeg', 'image/png', 'image/jpg', 'image/webp', 'video/mp4', 'video/mov', 'video/avi'])
-                ->maxSize(10240) // 10MB
-                ->imageResizeTargetWidth('800')
-                ->imageResizeTargetHeight('800')
-                ->columnSpanFull(),
+                Forms\Components\SpatieMediaLibraryFileUpload::make('media_moments')
+                    ->label('Media Moment (bisa lebih dari 1, campur foto & video)')
+                    ->collection('moments')
+                    ->multiple()
+                    ->acceptedFileTypes(['image/jpeg', 'image/png', 'image/jpg', 'image/gif', 'video/mp4', 'video/quicktime', 'video/mov', 'video/avi'])
+                    ->maxSize(10240)
+                    ->columnSpanFull()
+                    ->visible(fn (Get $get) => $get('type') === 'moment')
+                    ->dehydrated(fn (Get $get) => $get('type') === 'moment'),
+
+                Forms\Components\SpatieMediaLibraryFileUpload::make('media_status')
+                    ->label('Media Status (satu file, foto atau video)')
+                    ->collection('status')
+                    ->multiple(false)
+                    ->acceptedFileTypes(['image/jpeg', 'image/png', 'image/jpg', 'image/gif', 'video/mp4', 'video/quicktime', 'video/mov', 'video/avi'])
+                    ->maxSize(10240)
+                    ->columnSpanFull()
+                    ->visible(fn (Get $get) => $get('type') === 'status')
+                    ->dehydrated(fn (Get $get) => $get('type') === 'status'),
+
+                Forms\Components\SpatieMediaLibraryFileUpload::make('media_voice')
+                    ->label('Voice Note (satu file audio)')
+                    ->collection('voice')
+                    ->multiple(false)
+                    ->acceptedFileTypes(['audio/mpeg', 'audio/mp4', 'audio/m4a', 'audio/wav', 'audio/x-wav', 'audio/ogg', 'audio/aac', 'audio/webm', 'audio/amr', 'audio/opus', 'video/webm'])
+                    ->maxSize(30720)
+                    ->columnSpanFull()
+                    ->visible(fn (Get $get) => $get('type') === 'voice')
+                    ->dehydrated(fn (Get $get) => $get('type') === 'voice'),
 
             ]);
     }
@@ -79,21 +99,19 @@ class PostRelationManager extends RelationManager
                     ->color(fn (string $state): string => match ($state) {
                         'moment' => 'success',
                         'status' => 'info',
+                        'voice' => 'warning',
                         default => 'secondary',
                     })
                     ->formatStateUsing(fn (string $state): string => match ($state) {
                         'moment' => '📸 Moment',
                         'status' => '💬 Status',
+                        'voice' => '🎙️ Voice Note',
                         default => ucfirst($state),
                     }),
                 
-                Tables\Columns\SpatieMediaLibraryImageColumn::make('media')
-                    ->label('Preview')
-                    ->collection('post_media')
-                    ->limit(3)
-                    ->square()
-                    ->height(50)
-                    ->width(50),
+                Tables\Columns\ViewColumn::make('media_preview')
+                    ->label('Media')
+                    ->view('filament.columns.post-media-preview'),
                 
                 Tables\Columns\TextColumn::make('caption')
                     ->label('Caption')
@@ -102,7 +120,7 @@ class PostRelationManager extends RelationManager
                 
                 Tables\Columns\TextColumn::make('media_count')
                     ->label('Media')
-                    ->formatStateUsing(fn ($record) => $record->getMedia('post_media')->count() . ' file')
+                    ->formatStateUsing(fn ($record) => $record->getMedia('*')->count() . ' file')
                     ->badge()
                     ->color('primary'),
                 
@@ -131,6 +149,7 @@ class PostRelationManager extends RelationManager
                     ->options([
                         'moment' => 'Moment',
                         'status' => 'Status',
+                        'voice' => 'Voice Note',
                     ]),
                 
                 Tables\Filters\SelectFilter::make('invitation_guest_id')
@@ -160,7 +179,7 @@ class PostRelationManager extends RelationManager
                     ->modalDescription('Post, semua like, dan media akan dihapus secara permanen. Apakah Anda yakin?')
                     ->action(function ($record) {
                         // Hapus media terlebih dahulu
-                        $record->clearMediaCollection('post_media');
+                        $record->clearMediaCollection('*');
                         // Hapus post (cascade akan menghapus likes)
                         $record->delete();
                     }),
@@ -168,10 +187,7 @@ class PostRelationManager extends RelationManager
                 Tables\Actions\ViewAction::make()
                     ->label('Lihat')
                     ->modalHeading('Detail Post')
-                    ->mutateRecordDataUsing(function (array $data, $record): array {
-                        $data['media_preview'] = $record->getMedia('post_media');
-                        return $data;
-                    }),
+                    ->modalContent(fn (Post $record) => view('filament.post-media-review', ['post' => $record])),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
@@ -181,7 +197,7 @@ class PostRelationManager extends RelationManager
                         ->modalDescription('Post, like, dan media yang terpilih akan dihapus permanen')
                         ->action(function ($records) {
                             foreach ($records as $record) {
-                                $record->clearMediaCollection('post_media');
+                                $record->clearMediaCollection('*');
                                 $record->delete();
                             }
                         }),

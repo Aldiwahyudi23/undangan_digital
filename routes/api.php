@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\InvitationController;
 use App\Http\Controllers\Api\LiveChatController;
 use App\Http\Controllers\Api\LiveController;
 use App\Http\Controllers\Api\PostController;
+use App\Http\Controllers\Api\PhotoboothController;
 use App\Http\Controllers\Api\PublicBarcodeController;
 use App\Http\Controllers\API\VehicleController;
 use App\Http\Controllers\InvitationAccessController;
@@ -27,7 +28,10 @@ Route::post('/barcode/verify', [PublicBarcodeController::class, 'verify']);
 // Barcode publik — data barcode + tamu untuk halaman download frontend
 Route::get('/barcode/{token}', [PublicBarcodeController::class, 'show']);
 
-// Moment publik — daftar moment (tanpa auth), dipakai halaman barcode
+// Photo booth — data template frame + posisi slot untuk frontend (publik)
+Route::get('/photobooth/templates/{invitation}', [PhotoboothController::class, 'templates']);
+
+Route::post('/posts/voice', [PostController::class, 'createVoice']);
 Route::post('/posts/moments', [PostController::class, 'createMoment']);
 
 Route::prefix('guest')->group(function () {
@@ -64,10 +68,12 @@ Route::prefix('guest')->middleware(['auth:sanctum'])->group(function () {
         // Create
         Route::post('/moment', [PostController::class, 'createMoment']);
         Route::post('/status', [PostController::class, 'createStatus']);
+        Route::post('/voice', [PostController::class, 'createVoice']);
         
         // Read (Get All with pagination)
         Route::get('/moments', [PostController::class, 'getMoments']);
         Route::get('/statuses', [PostController::class, 'getStatuses']);
+        Route::get('/voices', [PostController::class, 'getVoices']);
         
         // Read (Single post)
         Route::get('/{id}', [PostController::class, 'show']);

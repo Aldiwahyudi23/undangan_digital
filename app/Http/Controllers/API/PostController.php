@@ -3,8 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Attendance;
-use App\Models\InvitationGuest;
+use App\Models\GuestCheckin;
 use App\Models\Post;
 use App\Models\PostLike;
 use Illuminate\Http\Request;
@@ -38,19 +37,13 @@ class PostController extends Controller
 
         $request->validate($rules);
 
-             // =========================
-            // 1. CEK STATUS KEHADIRAN
-            // =========================
-            $attendance = Attendance::where('invitation_guest_id', $request->invitation_guest_id)
-                ->where('invitation_id', $request->invitation_id)
-                ->first();
-
-            $isAttending = $attendance && $attendance->status === 'attending';
-
-        if ($isAttending === false) {
+        // =========================
+        // 1. CEK STATUS CHECK-IN
+        // =========================
+        if (!$this->isGuestCheckedIn($request->invitation_guest_id)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Mohon Maaf, Halaman ini hanya bisa update Postingan khusus tamu yang Hadir.'
+                'message' => 'Mohon Maaf, Halaman ini hanya bisa diakses oleh tamu yang sudah check-in.'
             ], 403);
         }
 
@@ -110,19 +103,13 @@ class PostController extends Controller
             'file' => 'required|file|mimes:jpeg,png,jpg,gif,mp4,mov,avi|max:30720'
         ]);
 
-                     // =========================
-            // 1. CEK STATUS KEHADIRAN
-            // =========================
-            $attendance = Attendance::where('invitation_guest_id', $request->invitation_guest_id)
-                ->where('invitation_id', $request->invitation_id)
-                ->first();
-
-            $isAttending = $attendance && $attendance->status === 'attending';
-
-        if ($isAttending === false) {
+        // =========================
+        // 1. CEK STATUS CHECK-IN
+        // =========================
+        if (!$this->isGuestCheckedIn($request->invitation_guest_id)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Mohon Maaf, Halaman ini hanya bisa update Postingan khusus tamu yang Hadir.'
+                'message' => 'Mohon Maaf, Halaman ini hanya bisa diakses oleh tamu yang sudah check-in.'
             ], 403);
         }
 
@@ -161,6 +148,208 @@ class PostController extends Controller
             ], 500);
         }
     }
+
+    // Create Voice Note (single audio file)
+    // public function createVoice(Request $request)
+    // {
+    //     $request->validate([
+    //         'invitation_id' => 'required|exists:invitations,id',
+    //         'invitation_guest_id' => 'required|exists:invitation_guests,id',
+    //         'caption' => 'nullable|string|max:1000',
+    //         'file' => 'required|file|mimes:m4a,mp3,wav,ogg,oga,aac,amr,webm,opus|max:30720',
+    //         'duration' => 'nullable|numeric|min:0'
+    //     ]);
+
+    //     // =========================
+    //     // 1. CEK STATUS CHECK-IN
+    //     // =========================
+    //     if (!$this->isGuestCheckedIn($request->invitation_guest_id)) {
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'Mohon Maaf, Halaman ini hanya bisa diakses oleh tamu yang sudah check-in.'
+    //         ], 403);
+    //     }
+
+    //     DB::beginTransaction();
+    //     try {
+    //         $post = Post::create([
+    //             'invitation_id' => $request->invitation_id,
+    //             'invitation_guest_id' => $request->invitation_guest_id,
+    //             'type' => 'voice',
+    //             'caption' => $request->caption
+    //         ]);
+
+    //         $media = $post->addMedia($request->file('file'))
+    //             ->toMediaCollection('voice');
+
+    //         if ($request->filled('duration')) {
+    //             $media->setCustomProperty('duration', $request->input('duration'));
+    //             $media->save();
+    //         }
+
+    //         DB::commit();
+
+    //         $mediaUrls = $this->getMediaUrls($post);
+
+    //         return response()->json([
+    //             'success' => true,
+    //             'message' => 'Voice note created successfully',
+    //             'data' => [
+    //                 'id' => $post->id,
+    //                 'caption' => $post->caption,
+    //                 'media' => $mediaUrls
+    //             ]
+    //         ], 201);
+
+    //     } catch (\Exception $e) {
+    //         DB::rollBack();
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'Failed to create voice note',
+    //             'error' => $e->getMessage()
+    //         ], 500);
+    //     }
+    // }
+
+    public function createVoice(Request $request)
+{
+    Log::info('========== CREATE VOICE START ==========');
+
+    Log::info('Request Data', [
+        'invitation_id' => $request->invitation_id,
+        'invitation_guest_id' => $request->invitation_guest_id,
+        'caption' => $request->caption,
+        'duration' => $request->duration,
+        'has_file' => $request->hasFile('file'),
+    ]);
+
+    if ($request->hasFile('file')) {
+        $file = $request->file('file');
+
+        Log::info('Uploaded File', [
+            'original_name' => $file->getClientOriginalName(),
+            'mime' => $file->getMimeType(),
+            'extension' => $file->getClientOriginalExtension(),
+            'size' => $file->getSize(),
+            'is_valid' => $file->isValid(),
+            'error' => $file->getError(),
+        ]);
+    } else {
+        Log::warning('No file uploaded.');
+    }
+
+    try {
+
+        $request->validate([
+            'invitation_id' => 'required|exists:invitations,id',
+            'invitation_guest_id' => 'required|exists:invitation_guests,id',
+            'caption' => 'nullable|string|max:1000',
+            'file' => 'required|file|mimes:m4a,mp3,wav,ogg,oga,aac,amr,webm,opus|max:30720',
+            'duration' => 'nullable|numeric|min:0'
+        ]);
+
+        Log::info('Validation passed.');
+
+    } catch (\Illuminate\Validation\ValidationException $e) {
+
+        Log::error('Validation failed', [
+            'errors' => $e->errors()
+        ]);
+
+        throw $e;
+    }
+
+    // =========================
+    // 1. CEK STATUS CHECK-IN
+    // =========================
+    if (!$this->isGuestCheckedIn($request->invitation_guest_id)) {
+
+        Log::warning('Guest has not checked in.', [
+            'guest_id' => $request->invitation_guest_id
+        ]);
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Mohon Maaf, Halaman ini hanya bisa diakses oleh tamu yang sudah check-in.'
+        ], 403);
+    }
+
+    DB::beginTransaction();
+
+    try {
+
+        Log::info('Creating Post...');
+
+        $post = Post::create([
+            'invitation_id' => $request->invitation_id,
+            'invitation_guest_id' => $request->invitation_guest_id,
+            'type' => 'voice',
+            'caption' => $request->caption
+        ]);
+
+        Log::info('Post Created', [
+            'post_id' => $post->id
+        ]);
+
+        Log::info('Uploading media to Spatie...');
+
+        $media = $post
+            ->addMedia($request->file('file'))
+            ->toMediaCollection('voice');
+
+        Log::info('Media Uploaded', [
+            'media_id' => $media->id,
+            'file_name' => $media->file_name,
+            'disk' => $media->disk,
+            'path' => $media->getPath(),
+        ]);
+
+        if ($request->filled('duration')) {
+
+            $media->setCustomProperty('duration', $request->duration);
+            $media->save();
+
+            Log::info('Duration saved', [
+                'duration' => $request->duration
+            ]);
+        }
+
+        DB::commit();
+
+        Log::info('Database Commit Success');
+
+        $mediaUrls = $this->getMediaUrls($post);
+
+        Log::info('========== CREATE VOICE SUCCESS ==========');
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Voice note created successfully',
+            'data' => [
+                'id' => $post->id,
+                'caption' => $post->caption,
+                'media' => $mediaUrls
+            ]
+        ], 201);
+
+    } catch (\Throwable $e) {
+
+        DB::rollBack();
+
+        Log::error('========== CREATE VOICE FAILED ==========', [
+            'message' => $e->getMessage(),
+            'file' => $e->getFile(),
+            'line' => $e->getLine(),
+            'trace' => $e->getTraceAsString()
+        ]);
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Failed to create voice note',
+            'error' => $e->getMessage()
+        ], 500);
+    }
+}
 
     // Get Moments (infinite scroll)
     public function getMoments(Request $request)
@@ -244,6 +433,46 @@ class PostController extends Controller
         ]);
     }
 
+    // Get Voice Notes (infinite scroll)
+    public function getVoices(Request $request)
+    {
+        $request->validate([
+            'invitation_id' => 'required|exists:invitations,id',
+            'invitation_guest_id' => 'nullable|exists:invitation_guests,id',
+            'limit' => 'nullable|integer|min:1|max:50',
+            'offset' => 'nullable|integer|min:0'
+        ]);
+
+        $limit = $request->get('limit', 10);
+        $offset = $request->get('offset', 0);
+        $guestId = $request->get('invitation_guest_id');
+
+        $voices = Post::with(['guest', 'likes'])
+            ->where('invitation_id', $request->invitation_id)
+            ->where('type', 'voice')
+            ->orderBy('created_at', 'desc')
+            ->skip($offset)
+            ->take($limit)
+            ->get()
+            ->map(function ($post) use ($guestId) {
+                return $this->formatPostResponse($post, $guestId);
+            });
+
+        $hasMore = Post::where('invitation_id', $request->invitation_id)
+            ->where('type', 'voice')
+            ->count() > ($offset + $limit);
+
+        return response()->json([
+            'success' => true,
+            'data' => $voices,
+            'pagination' => [
+                'limit' => $limit,
+                'offset' => $offset,
+                'has_more' => $hasMore
+            ]
+        ]);
+    }
+
     // Like/Unlike post
     public function toggleLike(Request $request, $postId)
     {
@@ -296,7 +525,11 @@ class PostController extends Controller
     // Helper: Get media URLs untuk version 11.x
     private function getMediaUrls($post)
     {
-        $collection = $post->type === 'status' ? 'status' : 'moments';
+        $collection = match ($post->type) {
+            'status' => 'status',
+            'voice' => 'voice',
+            default => 'moments',
+        };
         $mediaItems = $post->getMedia($collection);
         
         if ($mediaItems->isEmpty()) {
@@ -306,12 +539,17 @@ class PostController extends Controller
         return $mediaItems->map(function ($media) {
             return [
                 'id' => $media->id,
-                'type' => str_starts_with($media->mime_type, 'video') ? 'video' : 'image',
+                'type' => match (true) {
+                    str_starts_with($media->mime_type, 'video') => 'video',
+                    str_starts_with($media->mime_type, 'audio') => 'audio',
+                    default => 'image',
+                },
                 'original_url' => $media->getUrl(),
                 'thumbnail_url' => $media->getUrl('thumb'),
                 'mime_type' => $media->mime_type,
                 'size' => $media->size,
-                'file_name' => $media->file_name
+                'file_name' => $media->file_name,
+                'duration' => $media->getCustomProperty('duration'),
             ];
         })->toArray();
     }
@@ -335,5 +573,13 @@ class PostController extends Controller
             'likes_count' => $post->likes()->count(),
             'is_liked_by_me' => $guestId ? $post->isLikedBy($guestId) : false
         ];
+    }
+
+    // Helper: cek tamu sudah check-in dan belum checkout
+    private function isGuestCheckedIn(int $invitationGuestId): bool
+    {
+        return GuestCheckin::where('invitation_guest_id', $invitationGuestId)
+            ->whereNull('checkout_at')
+            ->exists();
     }
 }

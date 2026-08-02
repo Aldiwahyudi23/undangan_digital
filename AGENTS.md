@@ -66,7 +66,7 @@ Grouped under `app/Filament/Resources/`:
 | `Attendance`, `GiftAccount`, `GiftTransaction` | RSVP / gift tracking |
 | `GuestCheckin` | Physical check-in records |
 | `DoorprizeWinner` | Doorprize spin winners |
-| `Post`, `PostLike` | Guest moments & statuses |
+| `Post`, `PostLike` | Guest moments, statuses & voice notes |
 | `LiveChat` | Live stream chat messages |
 
 Repo hygiene: leftover `* copy.php` files exist (`app/Models/InvitationGuest copy.php`, `app/Http/Controllers/InvitationAccessController copy.php`). They're inactive (PSR-4 can't autoload filenames with spaces), but don't edit them — edit the originals. Doorprize endpoints previously under receptionist are now pengantin-only.

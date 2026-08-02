@@ -79,6 +79,20 @@ class PublicBarcodeController extends Controller
             }
         }
 
+        $moments = collect();
+        $voices = collect();
+
+        if ($guest) {
+            $posts = $guest->posts()
+                ->whereIn('type', ['moment', 'voice'])
+                ->with('media')
+                ->orderByDesc('created_at')
+                ->get();
+
+            $moments = $posts->where('type', 'moment')->values()->map(fn ($post) => $this->formatPostForBarcode($post));
+            $voices = $posts->where('type', 'voice')->values()->map(fn ($post) => $this->formatPostForBarcode($post));
+        }
+
         return response()->json([
             'success' => true,
             'data' => [
@@ -90,8 +104,11 @@ class PublicBarcodeController extends Controller
                     'name' => $guest->name,
                     'group_name' => $guest->group_name,
                     'location_tag' => $guest->location_tag,
-                    'has_shared_moment' => $guest->posts()->where('type', 'moment')->exists(),
+                    'has_shared_moment' => $moments->isNotEmpty(),
+                    'has_shared_voice' => $voices->isNotEmpty(),
                 ] : null,
+                'moments' => $moments->values(),
+                'voices' => $voices->values(),
                 'couple' => $couple,
                 'event' => $event,
                 'barcode' => [
@@ -102,6 +119,31 @@ class PublicBarcodeController extends Controller
                 ],
             ],
         ]);
+    }
+
+    private function formatPostForBarcode($post): array
+    {
+        $collection = $post->type === 'voice' ? 'voice' : 'moments';
+        $mediaItems = $post->getMedia($collection);
+
+        return [
+            'id' => $post->id,
+            'type' => $post->type,
+            'caption' => $post->caption,
+            'created_at' => $post->created_at,
+            'media' => $mediaItems->map(fn ($media) => [
+                'id' => $media->id,
+                'type' => match (true) {
+                    str_starts_with($media->mime_type, 'video') => 'video',
+                    str_starts_with($media->mime_type, 'audio') => 'audio',
+                    default => 'image',
+                },
+                'original_url' => $media->getUrl(),
+                'thumbnail_url' => $media->getUrl('thumb'),
+                'mime_type' => $media->mime_type,
+                'duration' => $media->getCustomProperty('duration'),
+            ])->values(),
+        ];
     }
 
     public function search(Request $request)

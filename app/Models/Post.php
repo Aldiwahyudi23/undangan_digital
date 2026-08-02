@@ -39,6 +39,11 @@ class Post extends Model implements HasMedia
         $this->addMediaCollection('status')
             ->acceptsMimeTypes(['image/jpeg', 'image/png', 'image/jpg', 'image/gif', 'video/mp4', 'video/quicktime', 'video/mov', 'video/avi'])
             ->singleFile();
+
+        // Collection untuk voice note (single file only)
+        $this->addMediaCollection('voice')
+            ->acceptsMimeTypes(['audio/mpeg', 'audio/mp4', 'audio/m4a', 'audio/wav', 'audio/x-wav', 'audio/ogg', 'audio/aac', 'audio/webm', 'audio/amr', 'audio/opus', 'video/webm'])
+            ->singleFile();
     }
     
     // Register media conversions (optional, untuk kompresi)
