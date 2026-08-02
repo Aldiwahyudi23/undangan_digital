@@ -56,7 +56,7 @@ class WhatsAppInvitationService
                 "{$location['address']}\n\n";
         }
 
-        $link = 'https://wedding-mira-aldi.keluargamahaya.com/undangan/'
+        $link = 'https://fixnikah.miraaldi.my.id/undangan/'
             . $guest->uuid;
             // . '?token='
             // . $guest->token;

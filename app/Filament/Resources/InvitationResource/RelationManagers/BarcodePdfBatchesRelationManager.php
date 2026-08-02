@@ -147,23 +147,14 @@ class BarcodePdfBatchesRelationManager extends RelationManager
     {
         $invitationId = $batch->invitation_id;
 
-        $lastCode = InvitationBarcode::where('invitation_id', $invitationId)
-            ->max('barcode_code');
-
-        if ($lastCode && preg_match('/^BC(\d+)$/', $lastCode, $matches)) {
-            $lastNumber = (int) $matches[1];
-        } else {
-            $lastNumber = 0;
-        }
+        $sequence = InvitationBarcode::nextSequence($invitationId);
 
         $barcodes = [];
-        for ($i = 1; $i <= $quantity; $i++) {
-            $code = 'BC'.str_pad($lastNumber + $i, 6, '0', STR_PAD_LEFT);
-
+        for ($i = 0; $i < $quantity; $i++) {
             $barcodes[] = [
                 'invitation_id' => $invitationId,
                 'uuid' => (string) \Illuminate\Support\Str::uuid(),
-                'barcode_code' => $code,
+                'barcode_code' => InvitationBarcode::formatCode($invitationId, $sequence + $i),
                 'barcode_token' => strtoupper(\Illuminate\Support\Str::random(16)),
                 'barcode_pdf_batch_id' => $batch->id,
                 'generated_at' => now(),

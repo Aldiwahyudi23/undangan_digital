@@ -352,7 +352,7 @@ class GuestsRelationManager extends RelationManager
                     ->color('info')
                     ->action(function ($record) {
 
-                        $link = url('https://wedding-mira-aldi.keluargamahaya.com/undangan/' . $record->uuid );
+                        $link = url('https://fixnikah.miraaldi.my.id/undangan/' . $record->uuid );
 
                         Notification::make()
                             ->title('Link Undangan')
@@ -523,12 +523,7 @@ class GuestsRelationManager extends RelationManager
                 'is_used' => true,
             ]);
         } else {
-            $code = 'BC' . str_pad(
-                InvitationBarcode::where('invitation_id', $guest->invitation_id)->count() + 1,
-                6,
-                '0',
-                STR_PAD_LEFT
-            );
+            $code = InvitationBarcode::nextCode($guest->invitation_id);
 
             InvitationBarcode::create([
                 'invitation_id' => $guest->invitation_id,

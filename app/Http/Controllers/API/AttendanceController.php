@@ -34,6 +34,41 @@ public function index(Request $request)
 
     $invitationId = $guest->invitation_id;
 
+    $invitation = $guest->invitation;
+
+    $couple = null;
+    $event = null;
+
+    if ($invitation) {
+        $male = $invitation->couples->firstWhere('gender', 'male');
+        $female = $invitation->couples->firstWhere('gender', 'female');
+
+        $couple = [
+            'cpp' => $male ? [
+                'nickname' => $male->nickname,
+                'full_name' => $male->full_name,
+            ] : null,
+            'cpw' => $female ? [
+                'nickname' => $female->nickname,
+                'full_name' => $female->full_name,
+            ] : null,
+        ];
+
+        $latestEventWithMap = $invitation->events()
+            ->whereNotNull('map_id')
+            ->orderBy('date', 'desc')
+            ->first();
+
+        if ($latestEventWithMap) {
+            $event = [
+                'title' => $latestEventWithMap->title,
+                'date' => $latestEventWithMap->date?->toDateString(),
+                'start_time' => $latestEventWithMap->start_time?->format('H:i'),
+                'end_time' => $latestEventWithMap->end_time?->format('H:i'),
+            ];
+        }
+    }
+
     // 🔥 ambil semua attendance
     $attendances = Attendance::with('guest')
         ->where('invitation_id', $invitationId)
@@ -51,6 +86,7 @@ public function index(Request $request)
     $barcodeData = null;
     if ($isAttending && $guest->barcode) {
         $barcodeData = [
+            'barcode_code' => $guest->barcode->barcode_code,
             'barcode_url' => BarcodeQrService::content($guest->barcode),
             'barcode_svg' => BarcodeQrService::svg($guest->barcode),
         ];
@@ -74,6 +110,8 @@ public function index(Request $request)
     return response()->json([
         'success' => true,
         'data' => $data,
+        'couple' => $couple,
+        'event' => $event,
         'meta' => [
             'has_attendance' => $hasAttendance, // ✅ FIXED
             'barcode' => $barcodeData, // ✅ barcode tampil hanya jika hadir

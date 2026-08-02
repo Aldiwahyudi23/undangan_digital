@@ -198,20 +198,7 @@ class PhysicalsRelationManager extends RelationManager
     {
         $invitationId = $guest->invitation_id;
 
-        $lastCode = InvitationBarcode::where('invitation_id', $invitationId)
-            ->where('barcode_code', 'like', 'BC%')
-            ->max('barcode_code');
-
-        if ($lastCode && preg_match('/^BC(\d+)$/', $lastCode, $matches)) {
-            $lastNumber = (int) $matches[1];
-        } else {
-            $lastNumber = 0;
-        }
-
-        do {
-            $lastNumber++;
-            $code = 'BC'.str_pad($lastNumber, 6, '0', STR_PAD_LEFT);
-        } while (InvitationBarcode::where('barcode_code', $code)->exists());
+        $code = InvitationBarcode::nextCode($invitationId);
 
         InvitationBarcode::create([
             'invitation_id' => $invitationId,

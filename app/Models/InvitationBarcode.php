@@ -57,4 +57,43 @@ class InvitationBarcode extends Model
     {
         return $this->hasMany(GuestCheckin::class, 'invitation_barcode_id');
     }
+
+    // 🔢 KODE BARCODE: "BC" + kode undangan (id, di-pad min 2 digit) + urutan 4 digit per undangan.
+    // Contoh: undangan id 1 urutan ke-1 → BC010001, undangan id 2 → BC020001.
+    public static function codePrefix(int $invitationId): string
+    {
+        return 'BC'.str_pad((string) $invitationId, 2, '0', STR_PAD_LEFT);
+    }
+
+    public static function formatCode(int $invitationId, int $sequence): string
+    {
+        return static::codePrefix($invitationId).str_pad((string) $sequence, 4, '0', STR_PAD_LEFT);
+    }
+
+    public static function nextSequence(int $invitationId): int
+    {
+        $prefix = static::codePrefix($invitationId);
+
+        $lastCode = static::where('invitation_id', $invitationId)
+            ->where('barcode_code', 'like', $prefix.'%')
+            ->max('barcode_code');
+
+        if ($lastCode && preg_match('/^'.preg_quote($prefix, '/').'(\d{4})$/', $lastCode, $matches)) {
+            return (int) $matches[1] + 1;
+        }
+
+        return 1;
+    }
+
+    public static function nextCode(int $invitationId): string
+    {
+        $sequence = static::nextSequence($invitationId);
+
+        do {
+            $code = static::formatCode($invitationId, $sequence);
+            $sequence++;
+        } while (static::where('barcode_code', $code)->exists());
+
+        return $code;
+    }
 }

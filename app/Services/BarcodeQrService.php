@@ -9,7 +9,7 @@ class BarcodeQrService
 {
     public static function baseUrl(): string
     {
-        return rtrim((string) config('services.barcode.base_url', 'https://fixnikah-mira-aldi.keluargamaha.com'), '/');
+        return rtrim((string) config('services.barcode.base_url', 'https://fixnikah-miraaldi.my.id'), '/');
     }
 
     public static function content(InvitationBarcode $barcode): string
