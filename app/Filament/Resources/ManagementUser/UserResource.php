@@ -80,7 +80,10 @@ class UserResource extends Resource
                             ? $query 
                             : $query->where('name', '!=', 'super_admin')
                     )
+                    ->multiple()
+                    ->searchable()
                     ->preload()
+                    ->native(false)
                     ->required(),
 
                 Forms\Components\Toggle::make('is_active')

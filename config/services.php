@@ -41,7 +41,7 @@ return [
     ],
 
     'barcode' => [
-        'base_url' => env('BARCODE_BASE_URL', 'https://fixnikah-mira-aldi.keluargamahaya.com'),
+        'base_url' => env('BARCODE_BASE_URL', 'https://fixnikah.miraaldi.my.id'),
     ],
 
     'photobooth' => [

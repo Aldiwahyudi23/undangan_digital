@@ -139,6 +139,21 @@ class BarcodePdfBatchesRelationManager extends RelationManager
                             ->send();
                     })
                     ->visible(fn ($record) => $record->barcodes()->count() > 0),
+
+                Tables\Actions\DeleteAction::make()
+                    ->label('Hapus Batch')
+                    ->icon('heroicon-o-trash')
+                    ->color('danger')
+                    ->requiresConfirmation()
+                    ->modalHeading('Hapus Batch Barcode')
+                    ->modalSubheading('Apakah Anda yakin ingin menghapus batch ini? Semua barcode terkait akan ikut terhapus.')
+                    ->modalButton('Ya, Hapus')
+                    ->before(function ($record) {
+                        $record->barcodes()->delete();
+                        if ($record->pdf_path) {
+                            Storage::delete($record->pdf_path);
+                        }
+                    }),
             ])
             ->bulkActions([]);
     }

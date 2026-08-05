@@ -26,7 +26,7 @@ class BarcodePdfService
         }
 
         $labelsPerPage = $settings['columns'] * $settings['rows'];
-        $pages = $barcodes->chunk($labelsPerPage);
+        $pages = $barcodes->chunk($labelsPerPage, false);
         $headerOffset = $settings['show_header'] ? $settings['header_height_mm'] : 0.0;
 
         $pdf = Pdf::loadView('pdf.barcode-batch', [
@@ -57,8 +57,8 @@ class BarcodePdfService
         return [
             0,
             0,
-            round($widthMm * 72 / 25.4, 2),
-            round($heightMm * 72 / 25.4, 2),
+            $widthMm * 72 / 25.4,
+            $heightMm * 72 / 25.4,
         ];
     }
 }

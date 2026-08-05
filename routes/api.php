@@ -30,6 +30,7 @@ Route::get('/barcode/{token}', [PublicBarcodeController::class, 'show']);
 
 // Photo booth — data template frame + posisi slot untuk frontend (publik)
 Route::get('/photobooth/templates/{invitation}', [PhotoboothController::class, 'templates']);
+Route::get('/photobooth/frame/{uuid}', [PhotoboothController::class, 'frame']);
 
 Route::post('/posts/voice', [PostController::class, 'createVoice']);
 Route::post('/posts/moments', [PostController::class, 'createMoment']);

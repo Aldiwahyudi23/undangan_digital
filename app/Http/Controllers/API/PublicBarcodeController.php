@@ -150,10 +150,12 @@ class PublicBarcodeController extends Controller
     {
         $request->validate([
             'name' => 'required|string|min:2',
+            'invitation_id' => 'required|exists:invitations,id',
         ]);
 
         $guests = InvitationGuest::with('invitation')
             ->whereHas('barcode')
+            ->where('invitation_id', $request->invitation_id)
             ->where('name', 'like', '%'.$request->name.'%')
             ->orderBy('name')
             ->limit(10)
@@ -179,10 +181,12 @@ class PublicBarcodeController extends Controller
     {
         $request->validate([
             'invitation_guest_id' => 'required|exists:invitation_guests,id',
+            'invitation_id' => 'required|exists:invitations,id',
             'code' => 'required|string',
         ]);
 
         $barcode = InvitationBarcode::where('invitation_guest_id', $request->invitation_guest_id)
+            ->whereHas('guest', fn ($q) => $q->where('invitation_id', $request->invitation_id))
             ->whereRaw('UPPER(barcode_code) = ?', [strtoupper($request->code)])
             ->first();
 
