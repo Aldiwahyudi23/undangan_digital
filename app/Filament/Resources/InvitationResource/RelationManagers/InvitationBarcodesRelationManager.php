@@ -220,6 +220,34 @@ class InvitationBarcodesRelationManager extends RelationManager
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
+                    Tables\Actions\BulkAction::make('delete_selected')
+                        ->label('Hapus Barcode Terpilih')
+                        ->icon('heroicon-o-trash')
+                        ->color('danger')
+                        ->requiresConfirmation()
+                        ->deselectRecordsAfterCompletion()
+                        ->action(function (Collection $records) {
+
+                            $used = $records->where('is_used', true);
+
+                            if ($used->isNotEmpty()) {
+                                Notification::make()
+                                    ->title('Gagal Menghapus')
+                                    ->body('Masih ada barcode yang sudah digunakan.')
+                                    ->danger()
+                                    ->send();
+
+                                return;
+                            }
+
+                            $records->each->delete();
+
+                            Notification::make()
+                                ->title('Berhasil')
+                                ->body($records->count() . ' barcode berhasil dihapus.')
+                                ->success()
+                                ->send();
+                        }),
                     Tables\Actions\BulkAction::make('generate_pdf')
                         ->label('Generate PDF Terpilih')
                         ->icon('heroicon-o-document-arrow-down')

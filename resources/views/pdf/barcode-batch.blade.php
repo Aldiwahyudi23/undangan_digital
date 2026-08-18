@@ -14,13 +14,16 @@
         $instructionH = min(8, max(4.5, $innerH * 0.27));
         $instructionFontPx = $innerH >= 22 ? 8.5 : 6.5;
         $codeH = min(3.5, max(2.5, $innerH * 0.12));
-        $qrSize = max(8, min(18, $innerH - $instructionH - $codeH - 0.5));
+        $bottomInfoH = min(3.2, max(2.4, $innerH * 0.11));
+        $bottomInfoFontPx = $innerW >= 55 ? 6.5 : ($innerW >= 42 ? 5.5 : 5);
+        $qrSize = max(8, min(18, $innerH - $instructionH - $codeH - $bottomInfoH - 0.5));
         $qrSize = min($qrSize, $innerW * 0.5);
         $qrCellW = $qrSize + 2 * $qrRightMargin;
         $infoW = max(10, $innerW - $qrCellW);
         $qrCellPct = $qrCellW / $innerW * 100;
         $infoCellPct = 100 - $qrCellPct;
-        $bodyH = $innerH - $instructionH;
+        $bodyH = $innerH - $instructionH - $bottomInfoH;
+        $downloadIcon = base64_encode('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="#666666" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M4 17v3h16v-3"/></svg>');
     @endphp
     <style>
         @page { margin: 0; }
@@ -69,7 +72,7 @@
 
         .barcode-item .instruction {
             font-size: {{ $instructionFontPx }}px;
-            color: #666;
+            color: #000;
             line-height: 1.25;
             text-align: center;
             margin-bottom: 0.8mm;
@@ -94,10 +97,10 @@
 
         .barcode-item .to-label {
             font-size: 8px;
-            color: #555;
+            color: #000;
             margin-bottom: 0.4mm;
         }
-
+ 
         .barcode-item .name {
             font-size: 12px;
             font-weight: bold;
@@ -134,6 +137,22 @@
             letter-spacing: 0.5px;
             color: #333;
         }
+
+        .barcode-item .download-info {
+            text-align: center;
+            font-size: {{ $bottomInfoFontPx }}px;
+            color: #666;
+            line-height: 1.15;
+            height: {{ $bottomInfoH }}mm;
+            overflow: hidden;
+        }
+
+        .barcode-item .download-icon {
+            width: 2.4mm;
+            height: 2.4mm;
+            margin-right: 0.8mm;
+            vertical-align: middle;
+        }
     </style>
 </head>
 <body>
@@ -157,7 +176,7 @@
                 @endphp
                 <div class="barcode-item" style="left: {{ $left }}mm; top: {{ $top }}mm; width: {{ $innerW }}mm; height: {{ $innerH }}mm;">
                     <div class="instruction">
-                        Gunakan barcode ini untuk masuk ke kondangan dan nantikan Doorprize nya!
+                        Kehadiran Anda sangat berarti bagi kami. Gunakan QR Code untuk mengonfirmasi kehadiran Anda.
                     </div>
                     <div class="divider"></div>
                     <table class="card-body" style="height: {{ $bodyH }}mm;">
@@ -177,6 +196,10 @@
                             </td>
                         </tr>
                     </table>
+                    <div class="download-info">
+                        <img class="download-icon" src="data:image/svg+xml;base64,{{ $downloadIcon }}" alt="">
+                        <span>Scan QR untuk download di HP</span>
+                    </div>
                 </div>
             @endforeach
         </div>

@@ -139,6 +139,31 @@ class BarcodePdfBatchesRelationManager extends RelationManager
                             ->send();
                     })
                     ->visible(fn ($record) => $record->barcodes()->count() > 0),
+                
+                Tables\Actions\Action::make('delete_pdf')
+                    ->label('Hapus PDF')
+                    ->icon('heroicon-o-document-minus')
+                    ->color('danger')
+                    ->requiresConfirmation()
+                    ->modalHeading('Hapus File PDF')
+                    ->modalDescription('File PDF akan dihapus, tetapi seluruh barcode dalam batch ini tetap tersimpan.')
+                    ->modalSubmitActionLabel('Ya, Hapus PDF')
+                   ->action(function ($record) {
+
+                        if ($record->pdf_path && Storage::exists($record->pdf_path)) {
+                            Storage::delete($record->pdf_path);
+                        }
+                    
+                        $record->forceFill([
+                            'pdf_path' => null,
+                        ])->save();
+                    
+                        Notification::make()
+                            ->title('PDF berhasil dihapus')
+                            ->success()
+                            ->send();
+                    })
+                    ->visible(fn ($record) => filled($record->pdf_path)),
 
                 Tables\Actions\DeleteAction::make()
                     ->label('Hapus Batch')

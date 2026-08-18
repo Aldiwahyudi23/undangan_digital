@@ -30,10 +30,18 @@ Middleware aliases are registered in `bootstrap/app.php` (`ability`, `validate.g
 
 `routes/api.php` has junk plus both deliberate and **accidental** public routes. Junk (safe to ignore): real bearer tokens left in comments, and a `use` of `App\Http\Controllers\API\VehicleController` that doesn't exist (note `API` is capitalized — inconsistent with the `Api\` namespaces used elsewhere; harmless because nothing references it). **Accidental public duplicates that actually work**: an unauthenticated `live-chat` block and a stray public `GET /gift-accounts` — their controllers (`LiveChatController`, `AttendanceController::getGiftAccounts`) don't require auth, so these routes are live endpoints that bypass Sanctum, **not** dead code. Don't delete them as dead, and don't strip their auth'd siblings (`/guest/live-chat`, `/guest/gift-accounts`) as redundant. Deliberately-public and **intentional**: the public `agora` group (`AgoraController::token()` authenticates via `guest_uuid` itself and 403s unless a host is streaming), `GET /test`, guest link routes (`/guest/invitation/{uuid}`, `/guest/invitation-data/{uuid}`, `/guest/refresh`), public barcode routes (`/barcode/search`, `/barcode/verify`, `/barcode/{token}`), photobooth routes (`/photobooth/templates/{invitation}`, `/photobooth/frame/{uuid}`), `POST /posts/moments` + `POST /posts/voice` (unauthenticated creates that rely on `invitation_guest_id` + a `GuestCheckin` without `checkout_at` for gating), and `receptionist/login`/`pengantin/login`. Don't trust that a route is intentional just because it lacks auth middleware; read the controller before deciding.
 
+### API controllers
+
+Organized under `app/Http/Controllers/Api/` (note: `Api`, not `API`):
+- Top-level: `AgoraController`, `AttendanceController`, `InvitationController`, `LiveChatController`, `PostController`, `PhotoboothController`, `PublicBarcodeController`
+- `Receptionist/`: `AuthController`, `DashboardController`, `DashboardCheckinController`, `GuestSearchController`, `CheckinController`, `ManualCheckinController`, `DoorprizeController`
+- `Pengantin/`: same set of controllers as Receptionist, plus `BarcodeLinkController`
+
 ### Key packages
 
 - `spatie/laravel-permission` + `bezhansalleh/filament-shield` (dev dep) — RBAC. After adding/modifying Filament resources run `php artisan shield:generate --all`.
 - `spatie/laravel-medialibrary` — media; `barryvdh/laravel-dompdf` — barcode PDFs; `simplesoftwareio/simple-qrcode` — QR codes; `spatie/eloquent-sortable` — drag-and-drop ordering.
+- `intervention/image` — image processing (required dep).
 - `pusher/pusher-php-server` — live chat broadcasts; Agora RTM/RTC token builders at `app/Services/Agora/`.
 - `predis/predis` is in composer.json but **not actually used**: `config/database.php` defaults to `REDIS_CLIENT=phpredis` (PHP extension) and the current `.env` runs queue/cache/session on the `database` driver.
 - `laravel/pail` — log streaming (part of `composer dev`).
@@ -43,8 +51,8 @@ Middleware aliases are registered in `bootstrap/app.php` (`ability`, `validate.g
 Grouped under `app/Filament/Resources/`:
 - `InvitationResource/` — main resource with 17 relation managers (guests, events, couples, images, maps, stories, attendance, gifts, barcodes, doorprizes, posts, photobooth, etc.)
 - `ManagementUser/` — `UserResource`, `RoleResource`
-- `API/` — `ApiAccountResource` for external service accounts (a `User` with `type='service'`; the resource's query filters `where('type', 'service')`, so ordinary users don't appear). Token form lists `vehicles:*` abilities, but no vehicle controller exists in the repo
-- `BarcodePdfTemplateResource/` — top-level (not grouped) — saved label-layout presets for the barcode PDF feature
+- `API/` — `ApiAccountResource` for external service accounts (a `User` with `type='service'`; the resource's query filters `where('type', 'service')`, so ordinary users don't appear). Token form lists `vehicles:*` abilities, but no vehicle controller exists in the repo. `app/Filament/Pages/GenerateServiceToken.php` (hidden from nav) issues the same `vehicles:*` Sanctum tokens for service users.
+- `BarcodePdfTemplateResource/` — top-level directory (nav group `Pengaturan`, not under the ManagementUser/API groupings) — saved label-layout presets for the barcode PDF feature
 
 ### Seeders — gotcha
 
@@ -80,13 +88,13 @@ Rendered by `app/Services/BarcodePdfService.php` → `resources/views/pdf/barcod
 
 - QR payload = `config('services.barcode.base_url')` (`BARCODE_BASE_URL`, defaults to `https://fixnikah.miraaldi.my.id`) + `/` + `barcode_token`; `BarcodeQrService::extractToken()` parses a scanned value back to the token (`app/Services/BarcodeQrService.php`).
 - **DomPDF has NO `box-sizing` support** (`width`/`height` = content box). The blade compensates: card outer size = `label_size − 2×(1.5mm padding + border)` so the *outer* card equals `label_width_mm`/`label_height_mm` exactly. Do not reintroduce `box-sizing` assumptions.
-- Card layout (2-line instruction on top, then a real 2-column HTML table below a dashed divider): left cell = `Kepada Yth. :` + guest `name` / `di <location_tag>`, right cell = QR + `barcode_code`. The left cell is a **fixed 3-line template** (verified: same y-position on every card regardless of data) — `Kepada Yth. :` always shows, the name line always shows (renders `&nbsp;` to keep its line height when the guest/name is missing), and the `di` line always renders, defaulting to the literal `Tempat` when `location_tag` is unset. `vertical-align: middle` centers each cell's content.
+- Card layout (black 2-line instruction on top, then a real 2-column HTML table below a dashed divider): left cell = `Kepada Yth. :` + guest `name` / `di <location_tag>`, right cell = QR + `barcode_code`. The left cell is a **fixed 3-line template** (verified: same y-position on every card regardless of data) — `Kepada Yth. :` always shows, the name line always shows (renders `&nbsp;` to keep its line height when the guest/name is missing), and the `di` line always renders, defaulting to the literal `Tempat` when `location_tag` is unset. `vertical-align: middle` centers each cell's content. A gray info strip sits below the table (inline SVG download icon + `Scan barcode untuk download barcode di HP anda`) — its height is reserved via `$bottomInfoH`, subtracted from both `$bodyH` and the QR-size budget, so the card outer size is unchanged. The icon is a base64 SVG data URI (same DomPDF rendering path as the QR), stroke-style paths render fine via `phenx/php-svg-lib`.
 - **DomPDF table gotcha**: `table-layout: fixed` discards explicit mm widths (Cellmap treats them as `auto`), so tables render short of the requested width. Use **percentage widths on `<td>`** (`$qrCellPct = (qrSize + 2×2mm) / innerW × 100`) with the table at `width: innerW mm` — DomPDF's `_assign_widths` Case 3 scales percents to fill the table exactly (verified: QR right edge lands 2.00mm off the content right edge). Don't reintroduce `table-layout: fixed` or absolute-positioned columns.
 - Paper size via `setPaper([0,0,w,h], 'portrait')` in **points** (`mm × 72 / 25.4`). The PDF page is exact; if printed output measures short (e.g. 141→135mm), the print dialog is scaling to fit printable area — print at 100%/Actual size.
 - **Paper-size rounding gotcha**: `BarcodePdfService::paperSize()` must pass `mm × 72 / 25.4` **unrounded** to `setPaper()`. DomPDF's `check_page_break()` (`FrameDecorator/Page.php`) compares the `.page` div's CSS height (mm→pt, full precision) against the page's content height; if the page height was `round(..., 2)`-ed, any paper height whose pt value rounds *down* (e.g. 140mm → 396.850394pt vs page 396.85pt) makes the div look ~0.0004pt too tall, so DomPDF splits the **last card** of each page onto its own page — 2 expected pages become 4 (`[11,1,11,1]`). A4 (297mm → 842.126 vs 842.13) rounds *up* and is unaffected; the old `round()` bug hit 140mm exactly. If you ever reintroduce rounding, the page height must stay ≥ the div height.
 - **Multi-page pagination gotcha**: `BarcodePdfService` chunks barcodes with `$barcodes->chunk($labelsPerPage, false)`. The `false` is load-bearing — Laravel 12's `Collection::chunk()` now defaults to `$preserveKeys = true`, so without it each page's keys keep the global index and the blade's `$top` continues (page 2 rows start at "row 4" position, stacking every card too low / off-page). Don't drop the `false`.
 - QR SVG data URIs embed fine (DomPDF renders SVG vectors). Use `@php` sizing vars at the top of the template (before `<style>`) so the style block can reference them.
-- `PhysicalsRelationManager` (Tamu Physical) now has an optional `location_tag` input (the column exists in `invitation_guests`); digital `GuestsRelationManager` has it too.
+- `PhysicalsRelationManager` (Tamu Physical) now has an optional `location_tag` input (the column exists in `invitation_guests`); digital `GuestsRelationManager` has it too. Digital `GuestsRelationManager` row actions: Copy Link (hardcodes the frontend URL `https://fixnikah.miraaldi.my.id/undangan/{uuid}` — not config-driven, unlike the config-backed barcode QRs), Share WA (redirects to `WhatsAppInvitationService::generateUrl` after `markAsSent`), and Reset Device (clears `device_ids`).
 - `InvitationGuest::booted()` `creating` hook: fixed an undefined-`$permissions` bug that previously nulled the default `color_icon` (and crashed in dev mode).
 
 ### Photo booth
@@ -101,7 +109,7 @@ Rendered by `app/Services/BarcodePdfService.php` → `resources/views/pdf/barcod
 
 ### Schedule (in `bootstrap/app.php`)
 
-- `guests:clean` runs daily — 3 days after the last event it sets each guest's own `token` column to null + `is_locked=true` (Sanctum tokens are **not** revoked). Note `loginViaLink`'s 403 cutoff is slightly stricter: `lastEvent.date endOfDay + 3 days`.
+- `guests:clean` runs daily — 3 days after the last event it sets each guest's own `token` column to null + `is_locked=true` (Sanctum tokens are **not** revoked). The two cutoffs differ: the job locks at `now >= max(event date) + 3 days` (from midnight, `CleanInvitationGuests.php`), while `loginViaLink` 403s only once `now > lastEvent.date endOfDay + 3 days` — login stays possible a little longer than the clean job allows.
 
 ### Env gotchas
 
@@ -117,6 +125,6 @@ Rendered by `app/Services/BarcodePdfService.php` → `resources/views/pdf/barcod
 ### Testing
 
 - PHPUnit with SQLite in-memory (see `phpunit.xml`).
-- Tests live in `tests/Unit/` and `tests/Feature/` — currently only scaffold `ExampleTest`s.
-- `composer test` runs `config:clear` before `php artisan test`. For a focused run: `php artisan test --filter=ExampleTest` (works for a single class or method name).
+- Only real test: `tests/Feature/InvitationStatsWidgetTest.php` (Livewire + `RefreshDatabase`; `setUp()` must `Role::findOrCreate` the roles the widget queries, and invitation creation requires `user_id`).
+- `composer test` runs `config:clear` before `php artisan test`. For a focused run: `php artisan test --filter=InvitationStatsWidgetTest` (works for a single class or method name).
 - No lint/typecheck/format command configured (`laravel/pint` is a dev dep but no `pint.json`).
