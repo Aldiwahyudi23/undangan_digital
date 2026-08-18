@@ -69,6 +69,11 @@ class Invitation extends Model
         return $this->hasMany(Post::class);
     }
 
+    public function moments()
+    {
+        return $this->hasMany(Moment::class);
+    }
+
     public function attendances()
     {
         return $this->hasMany(Attendance::class);

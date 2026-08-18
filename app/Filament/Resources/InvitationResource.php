@@ -104,6 +104,7 @@ class InvitationResource extends Resource
             RelationManagers\FamilyRelationManager::class,
             RelationManagers\AttendanceRelationManager::class,
             RelationManagers\PostRelationManager::class,
+            RelationManagers\MomentRelationManager::class,
             RelationManagers\UsersRelationManager::class,
             RelationManagers\PhotoboothTemplatesRelationManager::class,
         ];

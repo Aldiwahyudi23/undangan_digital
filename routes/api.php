@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\InvitationController;
 use App\Http\Controllers\Api\LiveChatController;
 use App\Http\Controllers\Api\LiveController;
 use App\Http\Controllers\Api\PostController;
+use App\Http\Controllers\Api\MomentController;
 use App\Http\Controllers\Api\PhotoboothController;
 use App\Http\Controllers\Api\PublicBarcodeController;
 use App\Http\Controllers\API\VehicleController;
@@ -34,6 +35,14 @@ Route::get('/photobooth/frame/{uuid}', [PhotoboothController::class, 'frame']);
 
 Route::post('/posts/voice', [PostController::class, 'createVoice']);
 Route::post('/posts/moments', [PostController::class, 'createMoment']);
+
+// Public moments (guest_name, no auth, event-date gated)
+Route::prefix('moments')->group(function () {
+    Route::get('/', [MomentController::class, 'getPosts']);
+    Route::get('/voices', [MomentController::class, 'getVoices']);
+    Route::post('/', [MomentController::class, 'createPost']);
+    Route::post('/voice', [MomentController::class, 'createVoice']);
+});
 
 Route::prefix('guest')->group(function () {
     // Login via link undangan
