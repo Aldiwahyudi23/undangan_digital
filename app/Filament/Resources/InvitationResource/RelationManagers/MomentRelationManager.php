@@ -132,6 +132,12 @@ class MomentRelationManager extends RelationManager
                         $data['invitation_id'] = $this->getOwnerRecord()->id;
                         return $data;
                     }),
+
+                Tables\Actions\Action::make('download_moment_pdf')
+                    ->label('Download QR Moment (PDF)')
+                    ->icon('heroicon-o-document-arrow-down')
+                    ->color('success')
+                    ->action(fn () => \App\Services\MomentPdfService::download($this->getOwnerRecord())),
             ])
             ->actions([
                 Tables\Actions\EditAction::make()

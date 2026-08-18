@@ -11,8 +11,6 @@ use Carbon\Carbon;
 
 class MomentController extends Controller
 {
-    private const MAX_FILE_SIZE_BYTES = 30 * 1024 * 1024; // 30MB
-
     public function createPost(Request $request)
     {
         $rules = [
@@ -35,19 +33,11 @@ class MomentController extends Controller
 
         $request->validate($rules);
 
-        if (!$this->isEventDay($request->invitation_id)) {
+        if (!$this->isEventActive($request->invitation_id)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Moment hanya bisa diupload pada hari acara.',
+                'message' => 'Moment hanya bisa diupload saat hari acara atau setelahnya.',
             ], 403);
-        }
-
-        $fileCheck = $this->checkFileSizes($request, 'files');
-        if ($fileCheck !== null) {
-            return response()->json([
-                'success' => false,
-                'message' => $fileCheck,
-            ], 422);
         }
 
         DB::beginTransaction();
@@ -101,19 +91,11 @@ class MomentController extends Controller
             'duration' => 'nullable|numeric|min:0',
         ]);
 
-        if (!$this->isEventDay($request->invitation_id)) {
+        if (!$this->isEventActive($request->invitation_id)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Voice note hanya bisa diupload pada hari acara.',
+                'message' => 'Voice note hanya bisa diupload saat hari acara atau setelahnya.',
             ], 403);
-        }
-
-        $fileCheck = $this->checkFileSizes($request, 'file', single: true);
-        if ($fileCheck !== null) {
-            return response()->json([
-                'success' => false,
-                'message' => $fileCheck,
-            ], 422);
         }
 
         DB::beginTransaction();
@@ -164,10 +146,10 @@ class MomentController extends Controller
             'offset' => 'nullable|integer|min:0',
         ]);
 
-        if (!$this->isEventDay($request->invitation_id)) {
+        if (!$this->isEventActive($request->invitation_id)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Moment hanya bisa dilihat pada hari acara.',
+                'message' => 'Moment hanya bisa dilihat saat hari acara atau setelahnya.',
             ], 403);
         }
 
@@ -209,10 +191,10 @@ class MomentController extends Controller
             'offset' => 'nullable|integer|min:0',
         ]);
 
-        if (!$this->isEventDay($request->invitation_id)) {
+        if (!$this->isEventActive($request->invitation_id)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Voice note hanya bisa dilihat pada hari acara.',
+                'message' => 'Voice note hanya bisa dilihat saat hari acara atau setelahnya.',
             ], 403);
         }
 
@@ -246,47 +228,17 @@ class MomentController extends Controller
         ]);
     }
 
-    private function isEventDay(int $invitationId): bool
+    private function isEventActive(int $invitationId): bool
     {
-        $eventDates = Invitation::find($invitationId)
+        $earliestEventDate = Invitation::find($invitationId)
             ?->events()
-            ->pluck('date')
-            ->map(fn ($date) => Carbon::parse($date)->startOfDay());
+            ->min('date');
 
-        if ($eventDates->isEmpty()) {
+        if (!$earliestEventDate) {
             return false;
         }
 
-        $today = Carbon::now()->startOfDay();
-
-        return $eventDates->contains(fn (Carbon $date) => $date->isSameDay($today));
-    }
-
-    private function checkFileSizes(Request $request, string $key, bool $single = false): ?string
-    {
-        $files = $request->file($key);
-
-        if (!$files) {
-            return null;
-        }
-
-        if (!is_array($files)) {
-            $files = [$files];
-        }
-
-        $maxMB = round(self::MAX_FILE_SIZE_BYTES / 1024 / 1024);
-
-        foreach ($files as $index => $file) {
-            $size = $file->getSize();
-            if ($size > self::MAX_FILE_SIZE_BYTES) {
-                $sizeMB = round($size / 1024 / 1024, 2);
-                $label = is_array($request->file($key)) ? 'File #' . ($index + 1) : 'File';
-
-                return "{$label} terlalu besar ({$sizeMB} MB). Maksimal yang diperbolehkan adalah {$maxMB} MB.";
-            }
-        }
-
-        return null;
+        return Carbon::parse($earliestEventDate)->startOfDay()->lte(Carbon::now()->startOfDay());
     }
 
     private function getMediaUrls($moment)
